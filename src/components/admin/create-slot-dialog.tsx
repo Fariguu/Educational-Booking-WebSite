@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { Calendar as CalendarIcon, Loader2, PlusCircle } from 'lucide-react'
+import { Calendar as CalendarIcon, Loader2, PlusCircle, Repeat } from 'lucide-react'
 import { addMinutes, format } from 'date-fns'
 
 import { Button } from '@/components/ui/button'
@@ -16,6 +16,7 @@ import {
 } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import { Checkbox } from "@/components/ui/checkbox"
 import { createSlot } from '@/app/actions/admin'
 
 export function CreateSlotDialog() {
@@ -27,9 +28,23 @@ export function CreateSlotDialog() {
   const [time, setTime] = useState<string>('15:00')
   const [duration, setDuration] = useState<number>(60)
 
+  // Nuovi state per la ricorrenza
+  const [isRecurring, setIsRecurring] = useState(false)
+  const [endDate, setEndDate] = useState<string>('')
+
   async function handleCreateSlot() {
     if (!date || !time) {
       setError("Inserisci data e ora valide")
+      return
+    }
+
+    if (isRecurring && !endDate) {
+      setError("Inserisci una data di fine per la ricorrenza")
+      return
+    }
+
+    if (isRecurring && new Date(endDate) < new Date(date)) {
+      setError("La data di fine deve essere successiva a quella di inizio")
       return
     }
 
@@ -37,25 +52,30 @@ export function CreateSlotDialog() {
     setError(null)
 
     try {
-      // Costruiamo un oggetto Date locale partendo dagli input
       const localStartDate = new Date(`${date}T${time}:00`)
       const localEndDate = addMinutes(localStartDate, duration)
       
+      // Prepariamo il payload che gestirà sia formati singoli che ricorrenti
       const payload = {
         start_time: localStartDate.toISOString(),
-        end_time: localEndDate.toISOString()
+        end_time: localEndDate.toISOString(),
+        is_recurring: isRecurring,
+        recurrence_end_date: isRecurring ? new Date(`${endDate}T23:59:59`).toISOString() : undefined,
+        duration_minutes: duration
       }
 
+      // Utilizzeremo la stessa Action (che aggiorneremo), delegando al backend i cicli
       const result = await createSlot(payload)
 
       if (result?.error) {
         setError(result.error)
       } else {
         setOpen(false)
-        // Reset state
         setDate('')
         setTime('15:00')
         setDuration(60)
+        setIsRecurring(false)
+        setEndDate('')
       }
     } catch (err) {
       setError("Si è verificato un errore inaspettato.")
@@ -116,6 +136,37 @@ export function CreateSlotDialog() {
                 <span className="text-sm text-muted-foreground whitespace-nowrap">minuti</span>
             </div>
           </div>
+
+          <div className="flex items-center space-x-2 pt-2 border-t">
+            <Checkbox 
+              id="recurring" 
+              checked={isRecurring} 
+              onCheckedChange={(checked) => setIsRecurring(checked as boolean)} 
+            />
+            <Label htmlFor="recurring" className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 flex items-center">
+              <Repeat className="w-4 h-4 mr-1 text-muted-foreground"/>
+              Ripeti ogni settimana
+            </Label>
+          </div>
+
+          {isRecurring && (
+            <div className="grid grid-cols-4 items-center gap-4 bg-muted/30 p-3 rounded-md border text-sm">
+              <Label htmlFor="endDate" className="text-right">Fino al</Label>
+              <Input
+                id="endDate"
+                type="date"
+                className="col-span-3 h-8"
+                value={endDate}
+                onChange={(e) => setEndDate(e.target.value)}
+                min={date} // Non può finire prima di iniziare
+                disabled={isPending}
+              />
+              <p className="col-span-4 text-xs text-muted-foreground mt-1 text-right">
+                Verrà creato uno slot alla stessa ora per ogni settimana inclusa.
+              </p>
+            </div>
+          )}
+
         </div>
 
         {error && (

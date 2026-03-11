@@ -37,3 +37,17 @@ export async function loginWithMagicLink(formData: z.infer<typeof LoginSchema>) 
 
   return { success: true }
 }
+
+export async function verifyOtpAction(email: string, token: string) {
+    if (!email || !token) return { error: "Email e codice sono richiesti" }
+
+    const supabase = await createClient()
+    const { error } = await supabase.auth.verifyOtp({
+        email,
+        token,
+        type: 'magiclink' // Supabase usa 'magiclink' come tipo anche per l'ispezine del token numerico
+    })
+
+    if (error) return { error: error.message }
+    return { success: true }
+}

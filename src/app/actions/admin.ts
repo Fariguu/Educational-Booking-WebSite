@@ -7,7 +7,12 @@ import { z } from 'zod'
 const CreateSlotSchema = z.object({
   start_time: z.string().datetime(),
   end_time: z.string().datetime(),
+  is_recurring: z.boolean().optional().default(false),
+  recurrence_end_date: z.string().datetime().optional(),
+  duration_minutes: z.number().optional().default(60)
 })
+
+import { addDays } from 'date-fns'
 
 export async function createSlot(formData: z.infer<typeof CreateSlotSchema>) {
   const supabase = await createClient()
@@ -18,12 +23,42 @@ export async function createSlot(formData: z.infer<typeof CreateSlotSchema>) {
   const validated = CreateSlotSchema.safeParse(formData)
   if (!validated.success) return { error: "Dati non validi" }
 
-  const { error } = await supabase.from('lessons').insert({
-    start_time: validated.data.start_time,
-    end_time: validated.data.end_time,
-    is_available: true,
-    status: 'available'
-  })
+  const { start_time, end_time, is_recurring, recurrence_end_date, duration_minutes } = validated.data
+  
+  const slotsToInsert = []
+  
+  if (is_recurring && recurrence_end_date) {
+    const start = new Date(start_time)
+    const end = new Date(recurrence_end_date)
+    
+    // Loop aggiungendo 7 giorni alla volta finché non superiamo la endDate
+    let currentStart = new Date(start)
+    while (currentStart <= end) {
+      const currentEnd = new Date(currentStart)
+      currentEnd.setMinutes(currentEnd.getMinutes() + duration_minutes)
+      
+      slotsToInsert.push({
+        start_time: currentStart.toISOString(),
+        end_time: currentEnd.toISOString(), // ISO renderà l'ora UTC corretta basata sulla data locale
+        is_available: true,
+        status: 'available'
+      })
+      
+      // Prossima settimana (+ 7 giorni usando date-fns per preservare l'ora locale attraverso DST)
+      currentStart = addDays(currentStart, 7)
+    }
+  } else {
+    // Inserzione Singola
+    slotsToInsert.push({
+      start_time: start_time,
+      end_time: end_time,
+      is_available: true,
+      status: 'available'
+    })
+  }
+
+  // Eseguiamo un Bulk Insert (Supabase supporta array di oggetti nell'insert)
+  const { error } = await supabase.from('lessons').insert(slotsToInsert)
 
   if (error) return { error: error.message }
 
