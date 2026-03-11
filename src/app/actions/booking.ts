@@ -70,9 +70,10 @@ export async function bookLesson(formData: z.infer<typeof BookingSchema>) {
 
   // 4. Invio email con Resend (se la chiave è presente)
   if (process.env.RESEND_API_KEY && process.env.RESEND_API_KEY !== 're_...') {
+    const fromEmail = process.env.RESEND_FROM_EMAIL || 'Prenotazioni <onboarding@resend.dev>'
     try {
       await resend.emails.send({
-        from: 'Prenotazioni <onboarding@resend.dev>', // Cambia con il tuo dominio verificato quando possibile
+        from: fromEmail,
         to: studentContact,
         subject: 'Conferma Richiesta Prenotazione',
         html: `<p>Ciao <strong>${studentName}</strong>,</p>
