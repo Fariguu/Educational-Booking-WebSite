@@ -1,8 +1,9 @@
 import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import "./globals.css";
-import { Analytics } from "@vercel/analytics/next"
-import { SpeedInsights } from "@vercel/speed-insights/next"
+import { Analytics } from "@vercel/analytics/next";
+import { SpeedInsights } from "@vercel/speed-insights/next";
+import { Toaster } from "@/components/ui/sonner";
 
 const interFont = Inter({
   variable: "--font-sans",
@@ -11,11 +12,11 @@ const interFont = Inter({
 
 export const metadata: Metadata = {
   title: {
-    default: "Ripetizioni Private | Matematica e Fisica",
-    template: "%s | RipetizioniPro",
+    default: "Prenota la tua Lezione Privata",
+    template: "%s | PrenotaLezioni",
   },
   description:
-    "Lezioni private di Matematica e Fisica online o in presenza. Prenota il tuo slot in pochi click, senza registrazione.",
+    "Prenota una lezione privata online o in presenza in pochi click. Senza registrazione, senza stress.",
 };
 
 export default function RootLayout({
@@ -29,6 +30,7 @@ export default function RootLayout({
         className={`${interFont.variable} font-sans antialiased`}
       >
         {children}
+        <Toaster position="bottom-right" richColors closeButton />
         <Analytics />
         <SpeedInsights />
       </body>

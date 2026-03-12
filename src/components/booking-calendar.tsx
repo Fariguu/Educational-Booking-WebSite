@@ -8,9 +8,9 @@ import {
   Clock,
   AlertCircle,
   Loader2,
-  CheckCircle2,
   CalendarDays,
 } from "lucide-react";
+import { toast } from "sonner";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
@@ -32,6 +32,8 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { createClient } from "@/utils/supabase/client";
 import { bookLesson } from "@/app/actions/booking";
+import { Checkbox } from "@/components/ui/checkbox";
+import Link from "next/link";
 
 interface Slot {
   id: string;
@@ -45,6 +47,9 @@ const formSchema = z.object({
   studentName: z.string().min(2, "Il nome deve avere almeno 2 caratteri"),
   studentContact: z.string().email("Inserisci un indirizzo email valido"),
   notes: z.string().optional(),
+  privacy: z.boolean().refine((v) => v === true, {
+    message: "Devi accettare la privacy policy per procedere",
+  }),
 });
 type FormValues = z.infer<typeof formSchema>;
 
@@ -57,11 +62,13 @@ export default function BookingCalendar() {
   const [isPending, setIsPending] = useState(false);
   const [turnstileToken, setTurnstileToken] = useState("");
   const [turnstileKey, setTurnstileKey] = useState(0);
-  const [success, setSuccess] = useState(false);
 
-  const { register, handleSubmit, reset, formState: { errors } } = useForm<FormValues>({
+  const { register, handleSubmit, reset, setValue, watch, formState: { errors } } = useForm<FormValues>({
     resolver: zodResolver(formSchema),
+    defaultValues: { privacy: false },
   });
+
+  const privacyChecked = watch('privacy');
 
   const fetchSlots = async () => {
     try {
@@ -105,13 +112,16 @@ export default function BookingCalendar() {
       setTurnstileToken("");
       setTurnstileKey((k) => k + 1);
     } else {
-      setSuccess(true);
+      toast.success("Prenotazione inviata!", {
+        description: "Riceverai una conferma via email non appena il professore approva.",
+        duration: 6000,
+      });
       setSelectedSlot(null);
       reset();
       await fetchSlots();
       // Resetta la selezione se non ci sono più slot prenotabili in quel giorno
       if (slotsForDay.every(s => s.status !== "available")) {
-          setSelectedDate(undefined);
+        setSelectedDate(undefined);
       }
     }
     setIsPending(false);
@@ -171,20 +181,6 @@ export default function BookingCalendar() {
           <AlertCircle className="w-5 h-5 flex-shrink-0" />
           <p className="text-sm font-medium flex-1">{error}</p>
           <Button variant="ghost" size="sm" onClick={() => setError(null)}>Chiudi</Button>
-        </div>
-      )}
-
-      {/* Successo prenotazione */}
-      {success && (
-        <div className="flex flex-col items-center justify-center p-8 text-center border border-green-200 rounded-xl bg-green-50 text-green-800">
-          <CheckCircle2 className="w-12 h-12 text-green-500 mb-3" />
-          <h3 className="text-xl font-bold mb-2">Prenotazione Inviata!</h3>
-          <p className="mb-4 text-green-700">
-            Riceverai un&apos;email di conferma non appena il professore avrà approvato.
-          </p>
-          <Button variant="outline" onClick={() => setSuccess(false)} className="border-green-300 text-green-800 hover:bg-green-100">
-            Ok, grazie
-          </Button>
         </div>
       )}
 
@@ -350,6 +346,24 @@ export default function BookingCalendar() {
                   <Label htmlFor="notes">Note (facoltativo)</Label>
                   <Textarea id="notes" {...register("notes")} placeholder="Argomenti, dubbi specifici..." />
                 </div>
+                {/* Privacy checkbox */}
+                <div className="space-y-1">
+                  <div className="flex items-start gap-3">
+                    <Checkbox
+                      id="booking-privacy"
+                      checked={privacyChecked}
+                      onCheckedChange={(checked) => setValue('privacy', checked === true, { shouldValidate: true })}
+                      className="mt-0.5"
+                    />
+                    <Label htmlFor="booking-privacy" className="text-sm font-normal leading-relaxed cursor-pointer">
+                      Ho letto e accetto la{' '}
+                      <Link href="/privacy" target="_blank" className="text-indigo-600 hover:underline font-medium">
+                        Privacy Policy
+                      </Link>
+                    </Label>
+                  </div>
+                  {errors.privacy && <p className="text-xs text-destructive pl-7">{errors.privacy.message}</p>}
+                </div>
                 <div className="flex justify-center py-1">
                   <Turnstile
                     key={turnstileKey}
@@ -366,7 +380,7 @@ export default function BookingCalendar() {
             <Button
               type="submit"
               form="booking-form"
-              disabled={isPending || !turnstileToken}
+              disabled={isPending || !turnstileToken || !privacyChecked}
               className="bg-indigo-600 hover:bg-indigo-700 text-white"
             >
               {isPending ? (
