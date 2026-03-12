@@ -21,7 +21,7 @@ export default function PublicNavbar() {
           <Link href="/prenota" className="hover:text-foreground transition-colors">
             Disponibilità
           </Link>
-          <Link href="#about" className="hover:text-foreground transition-colors">
+          <Link href="/#about" className="hover:text-foreground transition-colors">
             Chi sono
           </Link>
           <Link href="/contatti" className="hover:text-foreground transition-colors">

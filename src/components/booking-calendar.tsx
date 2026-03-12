@@ -38,6 +38,7 @@ interface Slot {
   start_time: string;
   end_time: string;
   is_available: boolean;
+  status: "available" | "pending" | "confirmed";
 }
 
 const formSchema = z.object({
@@ -68,12 +69,11 @@ export default function BookingCalendar() {
       const supabase = createClient();
       const { data, error: fetchError } = await supabase
         .from("lessons")
-        .select("id, start_time, end_time, is_available")
-        .eq("is_available", true)
+        .select("id, start_time, end_time, is_available, status")
         .gte("start_time", new Date().toISOString())
         .order("start_time", { ascending: true });
       if (fetchError) throw fetchError;
-      setSlots(data || []);
+      setSlots((data as Slot[]) || []);
     } catch {
       setError("Impossibile caricare le disponibilità. Riprova più tardi.");
     } finally {
@@ -83,15 +83,17 @@ export default function BookingCalendar() {
 
   useEffect(() => { fetchSlots(); }, []);
 
-  // Giorni che hanno almeno uno slot disponibile
-  const availableDays = slots.map((s) => startOfDay(new Date(s.start_time)));
+  // Solo i giorni che hanno almeno uno slot realmente "available" (prenotabile)
+  const availableDays = slots
+    .filter((s) => s.status === "available")
+    .map((s) => startOfDay(new Date(s.start_time)));
 
   // Slot del giorno selezionato
   const slotsForDay = selectedDate
     ? slots.filter((s) => isSameDay(new Date(s.start_time), selectedDate))
     : [];
 
-  const isDateAvailable = (date: Date) =>
+  const isDateWithAvailableSlots = (date: Date) =>
     availableDays.some((d) => isSameDay(d, date));
 
   const onSubmit = async (values: FormValues) => {
@@ -107,8 +109,10 @@ export default function BookingCalendar() {
       setSelectedSlot(null);
       reset();
       await fetchSlots();
-      // Resetta la selezione se non ci sono più slot in quel giorno
-      setSelectedDate(undefined);
+      // Resetta la selezione se non ci sono più slot prenotabili in quel giorno
+      if (slotsForDay.every(s => s.status !== "available")) {
+          setSelectedDate(undefined);
+      }
     }
     setIsPending(false);
   };
@@ -121,6 +125,43 @@ export default function BookingCalendar() {
       </div>
     );
   }
+
+  const getStatusConfig = (status: Slot["status"]) => {
+    switch (status) {
+      case "available":
+        return {
+          label: "Prenotabile",
+          colorClass: "text-emerald-600 border-emerald-200 bg-emerald-50",
+          iconColor: "text-emerald-600",
+          bgColor: "bg-emerald-50",
+          hoverBorder: "hover:border-emerald-400"
+        };
+      case "pending":
+        return {
+          label: "In attesa",
+          colorClass: "text-amber-600 border-amber-200 bg-amber-50",
+          iconColor: "text-amber-600",
+          bgColor: "bg-amber-50",
+          hoverBorder: "hover:border-amber-400"
+        };
+      case "confirmed":
+        return {
+          label: "Prenotata",
+          colorClass: "text-slate-500 border-slate-200 bg-slate-50",
+          iconColor: "text-slate-400",
+          bgColor: "bg-slate-50",
+          hoverBorder: "hover:border-slate-300"
+        };
+      default:
+        return {
+          label: "Non disponibile",
+          colorClass: "text-slate-500 border-slate-200 bg-slate-50",
+          iconColor: "text-slate-400",
+          bgColor: "bg-slate-50",
+          hoverBorder: "hover:border-slate-300"
+        };
+    }
+  };
 
   return (
     <div className="space-y-6">
@@ -173,7 +214,7 @@ export default function BookingCalendar() {
                 onSelect={setSelectedDate}
                 locale={it}
                 disabled={(date) =>
-                  isBefore(date, startOfDay(new Date())) || !isDateAvailable(date)
+                  isBefore(date, startOfDay(new Date()))
                 }
                 modifiers={{ available: availableDays }}
                 modifiersClassNames={{
@@ -186,15 +227,18 @@ export default function BookingCalendar() {
               />
             </div>
             {/* Legenda */}
-            <div className="flex items-center gap-4 mt-3 text-xs text-muted-foreground">
-              <span className="flex items-center gap-1.5">
-                <span className="w-3 h-3 rounded-full bg-indigo-100 border border-indigo-300" />
-                Disponibile
-              </span>
-              <span className="flex items-center gap-1.5">
-                <span className="w-3 h-3 rounded-full bg-indigo-600" />
-                Selezionato
-              </span>
+            <div className="flex flex-col gap-2 mt-4 ml-1">
+              <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider mb-1">Legenda Calendario</p>
+              <div className="flex items-center gap-4 text-xs text-muted-foreground">
+                <span className="flex items-center gap-1.5">
+                  <span className="w-3 h-3 rounded-full bg-indigo-100 border border-indigo-300" />
+                  Con lezioni libere
+                </span>
+                <span className="flex items-center gap-1.5">
+                  <span className="w-3 h-3 rounded-full bg-indigo-600" />
+                  Selezionato
+                </span>
+              </div>
             </div>
           </div>
 
@@ -203,32 +247,41 @@ export default function BookingCalendar() {
             {!selectedDate ? (
               <div className="flex flex-col items-center justify-center h-full p-10 text-center border-2 border-dashed rounded-2xl text-muted-foreground">
                 <CalendarIcon className="w-10 h-10 mb-3 opacity-30" />
-                <p className="font-medium">Seleziona un giorno evidenziato</p>
-                <p className="text-sm mt-1">Gli orari disponibili appariranno qui</p>
+                <p className="font-medium">Seleziona un giorno</p>
+                <p className="text-sm mt-1">Gli orari e la loro disponibilità appariranno qui</p>
               </div>
             ) : slotsForDay.length === 0 ? (
               <div className="flex flex-col items-center justify-center h-full p-10 text-center border-2 border-dashed rounded-2xl text-muted-foreground">
-                <p className="font-medium">Nessuno slot disponibile per questo giorno</p>
+                <p className="font-medium">Nessuno slot inserito per questo giorno</p>
                 <p className="text-sm mt-1">Prova a selezionare un altro giorno</p>
               </div>
             ) : (
               <div>
-                <p className="text-sm font-semibold text-muted-foreground mb-4 capitalize">
+                <p className="text-sm font-semibold text-muted-foreground mb-4 capitalize flex items-center gap-2">
+                  <CalendarIcon className="w-4 h-4" />
                   {format(selectedDate, "EEEE d MMMM yyyy", { locale: it })}
                 </p>
                 <div className="grid sm:grid-cols-2 gap-3">
                   {slotsForDay.map((slot) => {
                     const start = new Date(slot.start_time);
                     const end = new Date(slot.end_time);
+                    const isAvailable = slot.status === "available";
+                    const config = getStatusConfig(slot.status);
+
                     return (
                       <button
                         key={slot.id}
+                        disabled={!isAvailable}
                         onClick={() => setSelectedSlot(slot)}
-                        className="group flex items-center justify-between rounded-xl border bg-card p-4 text-left shadow-sm hover:border-indigo-400 hover:shadow-md transition-all"
+                        className={`group flex items-center justify-between rounded-xl border bg-card p-4 text-left shadow-sm transition-all ${
+                          isAvailable 
+                            ? `hover:border-indigo-400 hover:shadow-md cursor-pointer` 
+                            : `opacity-75 cursor-not-allowed`
+                        }`}
                       >
                         <div className="flex items-center gap-3">
-                          <div className="w-10 h-10 rounded-lg bg-indigo-50 flex items-center justify-center group-hover:bg-indigo-100 transition-colors">
-                            <Clock className="w-5 h-5 text-indigo-600" />
+                          <div className={`w-10 h-10 rounded-lg flex items-center justify-center transition-colors ${config.bgColor}`}>
+                            <Clock className={`w-5 h-5 ${config.iconColor}`} />
                           </div>
                           <div>
                             <p className="font-semibold text-sm leading-tight">
@@ -241,9 +294,9 @@ export default function BookingCalendar() {
                         </div>
                         <Badge
                           variant="outline"
-                          className="text-indigo-600 border-indigo-200 bg-indigo-50 group-hover:bg-indigo-100"
+                          className={config.colorClass}
                         >
-                          Prenota
+                          {config.label}
                         </Badge>
                       </button>
                     );
