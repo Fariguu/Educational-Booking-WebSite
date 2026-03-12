@@ -10,8 +10,12 @@ const interFont = Inter({
 });
 
 export const metadata: Metadata = {
-  title: "Sito Prenotazioni",
-  description: "Sistema di prenotazione serverless",
+  title: {
+    default: "Ripetizioni Private | Matematica e Fisica",
+    template: "%s | RipetizioniPro",
+  },
+  description:
+    "Lezioni private di Matematica e Fisica online o in presenza. Prenota il tuo slot in pochi click, senza registrazione.",
 };
 
 export default function RootLayout({
