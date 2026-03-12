@@ -13,7 +13,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 
 export const metadata: Metadata = {
-  title: "Ripetizioni Private | Lezioni di Qualità",
+  title: "Prenotazione Lezioni Private",
   description:
     "Prenota la tua lezione privata online o in presenza in pochi click. Senza registrazione, senza stress.",
 };
@@ -21,9 +21,9 @@ export const metadata: Metadata = {
 const features = [
   {
     icon: GraduationCap,
-    title: "Esperienza Comprovata",
+    title: "Insegnamento Personalizzato",
     description:
-      "Anni di insegnamento con un metodo chiaro, personalizzato sulle esigenze di ogni studente.",
+      "Ogni lezione è calibrata sulle esigenze dello studente: si parte dal livello attuale per raggiungere gli obiettivi fissati.",
   },
   {
     icon: CalendarCheck,
@@ -39,15 +39,6 @@ const features = [
   },
 ];
 
-const subjects = [
-  "Matematica",
-  "Fisica",
-  "Analisi",
-  "Algebra",
-  "Geometria",
-  "Statistica",
-];
-
 export default function HomePage() {
   return (
     <div className="min-h-screen bg-background flex flex-col">
@@ -57,7 +48,7 @@ export default function HomePage() {
           {/* Logo */}
           <Link href="/" className="flex items-center gap-2 font-bold text-lg">
             <BookOpen className="w-5 h-5 text-indigo-600" />
-            <span>RipetizioniPro</span>
+            <span>PrenotaLezioni</span>
           </Link>
 
           {/* Nav links */}
@@ -112,13 +103,12 @@ export default function HomePage() {
           </Badge>
 
           <h1 className="text-4xl md:text-6xl font-extrabold tracking-tight mb-6 leading-tight">
-            Ripetizioni private di{" "}
-            <span className="text-indigo-600">Matematica</span> e{" "}
-            <span className="text-indigo-600">Fisica</span>
+            Prenota la tua{" "}
+            <span className="text-indigo-600">lezione privata</span>
           </h1>
 
           <p className="text-lg md:text-xl text-muted-foreground mb-10 max-w-xl mx-auto">
-            Prenota una sessione online o in presenza in pochi click.{" "}
+            Scegli uno slot disponibile e prenota in pochi click.{" "}
             <strong className="text-foreground">Senza registrazione</strong>,
             senza attese.
           </p>
@@ -154,8 +144,7 @@ export default function HomePage() {
               Perché scegliermi?
             </h2>
             <p className="text-muted-foreground">
-              Un servizio pensato per rendere le ripetizioni semplici ed
-              efficaci.
+              Un servizio pensato per rendere le lezioni semplici ed efficaci.
             </p>
           </div>
 
@@ -186,7 +175,6 @@ export default function HomePage() {
             <div className="flex-shrink-0">
               <div className="relative w-44 h-44 rounded-full bg-gradient-to-br from-indigo-100 to-violet-100 flex items-center justify-center border-4 border-white shadow-xl">
                 <GraduationCap className="w-20 h-20 text-indigo-400" />
-                {/* Decorazione */}
                 <div className="absolute -bottom-2 -right-2 w-10 h-10 rounded-full bg-indigo-600 flex items-center justify-center shadow">
                   <Star className="w-5 h-5 text-white fill-white" />
                 </div>
@@ -205,24 +193,20 @@ export default function HomePage() {
                 Ciao, sono il Prof.
               </h2>
               <p className="text-muted-foreground leading-relaxed mb-4">
-                Ho una passione per la matematica e la fisica che cerco di
-                trasmettere ai miei studenti con un metodo chiaro e diretto.
-                Aiuto studenti delle scuole medie, superiori e universitari a
-                superare le difficoltà e a ritrovare fiducia nelle proprie
-                capacità.
+                Ho una passione per la materia che insegno e cerco di
+                trasmetterla ai miei studenti con un metodo chiaro e diretto.
+                Aiuto studenti di ogni livello a superare le difficoltà e a
+                ritrovare fiducia nelle proprie capacità.
               </p>
               <p className="text-muted-foreground leading-relaxed mb-6">
                 Ogni lezione è personalizzata: partiamo da dove sei e arriviamo
                 dove vuoi essere.
               </p>
 
-              {/* Materie */}
               <div className="flex flex-wrap gap-2 justify-center md:justify-start">
-                {subjects.map((s) => (
-                  <Badge key={s} variant="secondary" className="text-xs">
-                    {s}
-                  </Badge>
-                ))}
+                <Badge variant="secondary" className="text-xs">Online</Badge>
+                <Badge variant="secondary" className="text-xs">In presenza</Badge>
+                <Badge variant="secondary" className="text-xs">Tutti i livelli</Badge>
               </div>
             </div>
           </div>
@@ -236,8 +220,7 @@ export default function HomePage() {
             Pronto a fare il salto di qualità?
           </h2>
           <p className="text-indigo-100 mb-8 text-lg">
-            Scegli uno slot libero e prenota la tua prima lezione. È gratis
-            farlo — paghi solo se sei soddisfatto.
+            Scegli uno slot libero e prenota la tua prima lezione in pochi secondi.
           </p>
           <Link href="/prenota">
             <Button
@@ -257,7 +240,7 @@ export default function HomePage() {
         <div className="container mx-auto px-4 flex flex-col sm:flex-row items-center justify-between gap-4 text-sm text-muted-foreground">
           <div className="flex items-center gap-2 font-medium text-foreground">
             <BookOpen className="w-4 h-4 text-indigo-600" />
-            RipetizioniPro
+            PrenotaLezioni
           </div>
           <div className="flex items-center gap-5">
             <Link href="/contatti" className="hover:text-foreground transition-colors flex items-center gap-1">

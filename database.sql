@@ -46,3 +46,24 @@ FOR ALL
 TO authenticated 
 USING (true) 
 WITH CHECK (true);
+
+-- ─────────────────────────────────────────────────────────────────
+-- Tabella contacts (messaggi dal form di contatto - Milestone 8)
+-- ─────────────────────────────────────────────────────────────────
+CREATE TABLE contacts (
+    id         UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    name       TEXT NOT NULL,
+    email      TEXT NOT NULL,
+    message    TEXT NOT NULL,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+ALTER TABLE contacts ENABLE ROW LEVEL SECURITY;
+
+-- Solo l'admin autenticato può leggere i messaggi
+CREATE POLICY "Admin full access on contacts"
+ON contacts FOR ALL
+TO authenticated
+USING (true)
+WITH CHECK (true);
+
