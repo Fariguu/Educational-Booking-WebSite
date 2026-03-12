@@ -4,13 +4,14 @@ import {
   GraduationCap,
   CalendarCheck,
   ShieldCheck,
-  ArrowRight,
-  BookOpen,
   Star,
   Mail,
+  ArrowRight,
+  BookOpen,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import PublicNavbar from "@/components/public-navbar";
 
 export const metadata: Metadata = {
   title: "Prenotazione Lezioni Private",
@@ -42,34 +43,7 @@ const features = [
 export default function HomePage() {
   return (
     <div className="min-h-screen bg-background flex flex-col">
-      {/* ── NAVBAR ────────────────────────────────────────────── */}
-      <header className="sticky top-0 z-50 border-b bg-background/80 backdrop-blur-md">
-        <div className="container mx-auto px-4 h-16 flex items-center justify-between">
-          {/* Logo */}
-          <Link href="/" className="flex items-center gap-2 font-bold text-lg">
-            <BookOpen className="w-5 h-5 text-indigo-600" />
-            <span>PrenotaLezioni</span>
-          </Link>
-
-          {/* Nav links */}
-          <nav className="hidden sm:flex items-center gap-6 text-sm font-medium text-muted-foreground">
-            <Link href="#about" className="hover:text-foreground transition-colors">
-              Chi sono
-            </Link>
-            <Link href="/contatti" className="hover:text-foreground transition-colors">
-              Contatti
-            </Link>
-          </nav>
-
-          {/* CTA */}
-          <Link href="/prenota">
-            <Button size="sm" className="bg-indigo-600 hover:bg-indigo-700 text-white">
-              Prenota ora
-              <ArrowRight className="ml-1.5 w-4 h-4" />
-            </Button>
-          </Link>
-        </div>
-      </header>
+      <PublicNavbar />
 
       {/* ── HERO ──────────────────────────────────────────────── */}
       <section className="relative overflow-hidden py-24 md:py-36">
