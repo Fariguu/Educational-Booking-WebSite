@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { format } from 'date-fns'
 import { it } from 'date-fns/locale'
 import { CheckCircle2, Clock, XCircle, Trash2, Loader2 } from 'lucide-react'
@@ -32,6 +32,12 @@ export function AdminTabs({ initialLessons }: AdminTabsProps) {
   const [lessons, setLessons] = useState<Lesson[]>(initialLessons)
   const [isRemoving, setIsRemoving] = useState<string | null>(null)
   const [isProcessing, setIsProcessing] = useState<string | null>(null)
+
+  // Sincronizza lo state locale quando il Server Component passa nuovi dati
+  // (es. dopo router.refresh() chiamato da CreateSlotDialog)
+  useEffect(() => {
+    setLessons(initialLessons)
+  }, [initialLessons])
 
   // Filtriamo le lezioni per le varie tab
   const pendingLessons = lessons.filter(l => l.status === 'pending')

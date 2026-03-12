@@ -23,6 +23,7 @@ export function CreateSlotDialog() {
   const [open, setOpen] = useState(false)
   const [isPending, setIsPending] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const router = useRouter()
   
   const [date, setDate] = useState<string>('')
   const [time, setTime] = useState<string>('15:00')
@@ -71,6 +72,7 @@ export function CreateSlotDialog() {
         setError(result.error)
       } else {
         setOpen(false)
+        router.refresh()
         setDate('')
         setTime('15:00')
         setDuration(60)

@@ -136,6 +136,7 @@ export async function confirmLesson(lessonId: string) {
   }
 
   revalidatePath('/admin')
+  revalidatePath('/')
   return { success: true, gcalUrl }
 }
 
