@@ -130,7 +130,7 @@ export default function BookingCalendar() {
   if (loading && slots.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center p-16 text-center">
-        <Loader2 className="w-10 h-10 text-indigo-400 animate-spin mb-4" />
+        <Loader2 className="w-10 h-10 text-purple-400 animate-spin mb-4" />
         <p className="text-muted-foreground">Caricamento disponibilità...</p>
       </div>
     );
@@ -187,13 +187,13 @@ export default function BookingCalendar() {
       {slots.length === 0 && !loading ? (
         /* Stato vuoto */
         <div className="flex flex-col items-center justify-center p-14 text-center border rounded-2xl bg-card">
-          <div className="w-20 h-20 rounded-full bg-indigo-50 flex items-center justify-center mb-6">
-            <CalendarDays className="w-10 h-10 text-indigo-300" />
+          <div className="w-20 h-20 rounded-full bg-purple-50 flex items-center justify-center mb-6">
+            <CalendarDays className="w-10 h-10 text-purple-300" />
           </div>
           <h3 className="text-xl font-semibold mb-2">Nessun orario disponibile</h3>
           <p className="text-muted-foreground max-w-sm">
             Al momento non ci sono slot liberi. Riprova nei prossimi giorni o{" "}
-            <a href="/contatti" className="text-indigo-600 hover:underline">contattami</a>.
+            <a href="/contatti" className="text-purple-600 hover:underline">contattami</a>.
           </p>
         </div>
       ) : (
@@ -214,11 +214,14 @@ export default function BookingCalendar() {
                 }
                 modifiers={{ available: availableDays }}
                 modifiersClassNames={{
-                  available: "!bg-indigo-50 !text-indigo-700 !font-semibold hover:!bg-indigo-100",
+                  available: "!bg-sky-100 !text-sky-700 !font-semibold hover:!bg-sky-200 rounded-lg border border-sky-300",
                 }}
                 classNames={{
-                  selected: "!bg-indigo-600 !text-white hover:!bg-indigo-700",
-                  today: "!bg-muted",
+                  selected: "aria-selected:!bg-purple-600 aria-selected:!text-white !bg-purple-600 !text-white rounded-lg shadow-sm border border-purple-600",
+                  today: "!bg-muted rounded-lg border border-transparent",
+                  day: "rounded-lg border border-transparent h-9 w-9 p-0 font-normal aria-selected:opacity-100",
+                  button_next: "hover:!bg-purple-50",
+                  button_previous: "hover:!bg-purple-50",
                 }}
               />
             </div>
@@ -227,11 +230,11 @@ export default function BookingCalendar() {
               <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider mb-1">Legenda Calendario</p>
               <div className="flex items-center gap-4 text-xs text-muted-foreground">
                 <span className="flex items-center gap-1.5">
-                  <span className="w-3 h-3 rounded-full bg-indigo-100 border border-indigo-300" />
+                  <span className="w-4 h-4 rounded-md bg-sky-100 border border-sky-300" />
                   Con lezioni libere
                 </span>
                 <span className="flex items-center gap-1.5">
-                  <span className="w-3 h-3 rounded-full bg-indigo-600" />
+                  <span className="w-4 h-4 rounded-md bg-purple-600" />
                   Selezionato
                 </span>
               </div>
@@ -271,7 +274,7 @@ export default function BookingCalendar() {
                         onClick={() => setSelectedSlot(slot)}
                         className={`group flex items-center justify-between rounded-xl border bg-card p-4 text-left shadow-sm transition-all ${
                           isAvailable 
-                            ? `hover:border-indigo-400 hover:shadow-md cursor-pointer` 
+                            ? `hover:border-purple-400 hover:shadow-md cursor-pointer` 
                             : `opacity-75 cursor-not-allowed`
                         }`}
                       >
@@ -315,14 +318,14 @@ export default function BookingCalendar() {
           {selectedSlot && (
             <div className="py-3 space-y-4">
               {/* Riepilogo slot */}
-              <div className="bg-indigo-50 border border-indigo-100 p-3 rounded-xl space-y-1">
-                <div className="flex items-center gap-2 text-sm font-medium text-indigo-800">
+              <div className="bg-purple-50 border border-purple-100 p-3 rounded-xl space-y-1">
+                <div className="flex items-center gap-2 text-sm font-medium text-purple-800">
                   <CalendarIcon className="w-4 h-4" />
                   <span className="capitalize">
                     {format(new Date(selectedSlot.start_time), "EEEE d MMMM", { locale: it })}
                   </span>
                 </div>
-                <div className="flex items-center gap-2 text-sm text-indigo-600">
+                <div className="flex items-center gap-2 text-sm text-purple-600">
                   <Clock className="w-4 h-4" />
                   <span>
                     {format(new Date(selectedSlot.start_time), "HH:mm")} –{" "}
@@ -357,7 +360,7 @@ export default function BookingCalendar() {
                     />
                     <Label htmlFor="booking-privacy" className="text-sm font-normal leading-relaxed cursor-pointer">
                       Ho letto e accetto la{' '}
-                      <Link href="/privacy" target="_blank" className="text-indigo-600 hover:underline font-medium">
+                      <Link href="/privacy" target="_blank" className="text-purple-600 hover:underline font-medium">
                         Privacy Policy
                       </Link>
                     </Label>
@@ -381,7 +384,7 @@ export default function BookingCalendar() {
               type="submit"
               form="booking-form"
               disabled={isPending || !turnstileToken || !privacyChecked}
-              className="bg-indigo-600 hover:bg-indigo-700 text-white"
+              className="bg-purple-600 hover:bg-purple-700 text-white"
             >
               {isPending ? (
                 <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Invio in corso...</>
