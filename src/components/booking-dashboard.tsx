@@ -10,7 +10,7 @@ import * as z from "zod";
 import { Turnstile } from "@marsidev/react-turnstile";
 
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
@@ -18,6 +18,28 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { createClient } from "@/utils/supabase/client";
 import { bookLesson } from "@/app/actions/booking";
+
+function generateTimeSlots(start: Date, end: Date) {
+    const slots = [];
+    let current = start.getTime();
+    const duration = 60 * 60000; // 60 minuti
+    const interval = 30 * 60000; // scatti da 30 minuti
+
+    while (current + duration <= end.getTime()) {
+        slots.push({
+            start: new Date(current),
+            end: new Date(current + duration)
+        });
+        current += interval;
+    }
+    
+    // Se lo slot è troppo corto (< 60 min) ma esistente, permetti comunque la prenotazione dell'intero periodo
+    if (slots.length === 0 && start.getTime() < end.getTime()) {
+        slots.push({ start, end });
+    }
+    
+    return slots;
+}
 
 interface Slot {
     id: string;
@@ -43,6 +65,18 @@ export default function BookingDashboard() {
     const [turnstileToken, setTurnstileToken] = useState<string>("");
     const [success, setSuccess] = useState(false);
     const [turnstileKey, setTurnstileKey] = useState(0);
+    const [selectedTimeRange, setSelectedTimeRange] = useState<{start: Date, end: Date} | null>(null);
+
+    const availableTimeRanges = selectedSlot ? generateTimeSlots(new Date(selectedSlot.start_time), new Date(selectedSlot.end_time)) : [];
+
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    useEffect(() => {
+        if (availableTimeRanges.length === 1) {
+            setSelectedTimeRange(availableTimeRanges[0]);
+        } else {
+            setSelectedTimeRange(null);
+        }
+    }, [selectedSlot]);
 
     const { register, handleSubmit, reset, formState: { errors } } = useForm<FormValues>({
         resolver: zodResolver(formSchema),
@@ -75,7 +109,7 @@ export default function BookingDashboard() {
     }, []);
 
     const onSubmit = async (values: FormValues) => {
-        if (!selectedSlot || !turnstileToken) return;
+        if (!selectedSlot || !turnstileToken || !selectedTimeRange) return;
 
         try {
             setIsPending(true);
@@ -83,6 +117,8 @@ export default function BookingDashboard() {
                 ...values,
                 slotId: selectedSlot.id,
                 turnstileToken,
+                requestedStartTime: selectedTimeRange.start.toISOString(),
+                requestedEndTime: selectedTimeRange.end.toISOString(),
             });
 
             if (result.error) {
@@ -97,7 +133,7 @@ export default function BookingDashboard() {
             setSelectedSlot(null);
             reset();
             fetchSlots();
-        } catch (err) {
+        } catch (_err) {
             setError("Si è verificato un errore imprevisto.");
         } finally {
             setIsPending(false);
@@ -127,7 +163,7 @@ export default function BookingDashboard() {
                 <div className="flex flex-col items-center justify-center p-8 text-center border border-green-200 rounded-xl bg-green-50 text-green-800 mb-6">
                     <CheckCircle2 className="w-12 h-12 text-green-600 mb-4" />
                     <h3 className="text-xl font-bold mb-2">Prenotazione Inviata!</h3>
-                    <p className="mb-4">Riceverai un'email di conferma non appena il professore avrà approvato la richiesta.</p>
+                    <p className="mb-4">Riceverai un&apos;email di conferma non appena il professore avrà approvato la richiesta.</p>
                     <Button onClick={() => setSuccess(false)} variant="outline">Ok, grazie</Button>
                 </div>
             )}
@@ -200,6 +236,29 @@ export default function BookingDashboard() {
 
                             <form id="booking-form" onSubmit={handleSubmit(onSubmit)} className="space-y-4">
                                 <div className="space-y-2">
+                                    <Label>Seleziona Orario</Label>
+                                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 mt-2 max-h-40 overflow-y-auto pr-1">
+                                        {availableTimeRanges.map((range, idx) => {
+                                            const isSelected = selectedTimeRange?.start.getTime() === range.start.getTime();
+                                            return (
+                                                <Button 
+                                                    key={idx}
+                                                    type="button"
+                                                    variant={isSelected ? "default" : "outline"}
+                                                    onClick={() => setSelectedTimeRange(range)}
+                                                    className="w-full text-xs font-medium"
+                                                >
+                                                    {format(range.start, "HH:mm")} - {format(range.end, "HH:mm")}
+                                                </Button>
+                                            )
+                                        })}
+                                    </div>
+                                    {!selectedTimeRange && (
+                                        <p className="text-xs text-destructive">Scegli un orario per procedere con la prenotazione.</p>
+                                    )}
+                                </div>
+
+                                <div className="space-y-2">
                                     <Label htmlFor="studentName">Nome Completo</Label>
                                     <Input id="studentName" {...register("studentName")} placeholder="Es. Mario Rossi" />
                                     {errors.studentName && <p className="text-xs text-destructive">{errors.studentName.message}</p>}
@@ -232,7 +291,7 @@ export default function BookingDashboard() {
                         <Button
                             type="submit"
                             form="booking-form"
-                            disabled={isPending || !turnstileToken}
+                            disabled={isPending || !turnstileToken || !selectedTimeRange}
                         >
                             {isPending ? (
                                 <>

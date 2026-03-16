@@ -5,7 +5,7 @@ import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import * as z from 'zod'
 import { Turnstile } from '@marsidev/react-turnstile'
-import { Loader2, CheckCircle2, AlertCircle, Send } from 'lucide-react'
+import { Loader2, AlertCircle, Send } from 'lucide-react'
 import Link from 'next/link'
 import { toast } from 'sonner'
 

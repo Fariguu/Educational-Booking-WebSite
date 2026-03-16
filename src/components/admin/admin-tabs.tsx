@@ -3,7 +3,8 @@
 import { useState, useEffect } from 'react'
 import { format } from 'date-fns'
 import { it } from 'date-fns/locale'
-import { CheckCircle2, Clock, XCircle, Trash2, Loader2 } from 'lucide-react'
+import { useRouter } from 'next/navigation'
+import { CheckCircle2, Clock, XCircle, Trash2, Loader2, AlertCircle, Edit } from 'lucide-react'
 
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Badge } from "@/components/ui/badge"
@@ -11,6 +12,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Button } from '@/components/ui/button'
 import { removeAvailableSlot, confirmLesson, rejectLesson } from '@/app/actions/admin'
+import { EditLessonDialog } from './edit-lesson-dialog'
 
 // Definiamo il tipo basandoci sullo schema
 export type Lesson = {
@@ -22,6 +24,8 @@ export type Lesson = {
   student_name: string | null
   student_contact: string | null
   notes: string | null
+  reschedule_requested: boolean
+  reschedule_notes: string | null
 }
 
 interface AdminTabsProps {
@@ -32,6 +36,8 @@ export function AdminTabs({ initialLessons }: AdminTabsProps) {
   const [lessons, setLessons] = useState<Lesson[]>(initialLessons)
   const [isRemoving, setIsRemoving] = useState<string | null>(null)
   const [isProcessing, setIsProcessing] = useState<string | null>(null)
+  const [editingLesson, setEditingLesson] = useState<Lesson | null>(null)
+  const router = useRouter()
 
   // Sincronizza lo state locale quando il Server Component passa nuovi dati
   // (es. dopo router.refresh() chiamato da CreateSlotDialog)
@@ -116,6 +122,9 @@ export function AdminTabs({ initialLessons }: AdminTabsProps) {
                         <div className="flex items-center gap-2">
                           <Clock className="w-4 h-4 text-orange-500" />
                           {formatDateTime(lesson.start_time)}
+                          {lesson.reschedule_requested && (
+                            <Badge variant="outline" className="text-amber-600 border-amber-300 bg-amber-50 ml-1">Spostamento Richiesto</Badge>
+                          )}
                         </div>
                       </TableCell>
                       <TableCell>{lesson.student_name}</TableCell>
@@ -124,8 +133,15 @@ export function AdminTabs({ initialLessons }: AdminTabsProps) {
                           {lesson.student_contact}
                         </a>
                       </TableCell>
-                      <TableCell className="max-w-[200px] truncate" title={lesson.notes || ''}>
-                        {lesson.notes || '-'}
+                      <TableCell className="max-w-[200px] truncate" title={`${lesson.notes || ''} ${lesson.reschedule_notes ? '(Reschedule: ' + lesson.reschedule_notes + ')' : ''}`}>
+                        {lesson.reschedule_requested && lesson.reschedule_notes ? (
+                          <div className="text-amber-700 italic flex items-center gap-1.5 whitespace-nowrap overflow-hidden text-ellipsis">
+                            <AlertCircle className="w-3 h-3 flex-shrink-0"/> 
+                            <span className="truncate">{lesson.reschedule_notes}</span>
+                          </div>
+                        ) : (
+                          lesson.notes || '-'
+                        )}
                       </TableCell>
                       <TableCell className="text-right">
                         <div className="flex justify-end gap-2">
@@ -138,6 +154,16 @@ export function AdminTabs({ initialLessons }: AdminTabsProps) {
                           >
                             {isProcessing === lesson.id ? <Loader2 className="w-4 h-4 mr-1 animate-spin" /> : <CheckCircle2 className="w-4 h-4 mr-1" />}
                             Conferma
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            className="text-blue-600 hover:text-blue-700 hover:bg-blue-50"
+                            onClick={() => setEditingLesson(lesson)}
+                            disabled={isProcessing === lesson.id}
+                          >
+                            <Edit className="w-4 h-4 mr-1" />
+                            Modifica
                           </Button>
                           <Button
                             size="sm"
@@ -178,16 +204,42 @@ export function AdminTabs({ initialLessons }: AdminTabsProps) {
                     <TableHead>Data e Ora</TableHead>
                     <TableHead>Studente</TableHead>
                     <TableHead>Contatto</TableHead>
+                    <TableHead>Note / Spostamenti</TableHead>
+                    <TableHead className="text-right">Azioni</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {confirmedLessons.map((lesson) => (
                     <TableRow key={lesson.id}>
                       <TableCell className="font-medium text-green-600">
-                        {formatDateTime(lesson.start_time)}
+                        <div className="flex items-center gap-2">
+                          {formatDateTime(lesson.start_time)}
+                          {lesson.reschedule_requested && (
+                            <Badge variant="outline" className="text-amber-600 border-amber-300 bg-amber-50 ml-1">Spostamento Richiesto</Badge>
+                          )}
+                        </div>
                       </TableCell>
                       <TableCell>{lesson.student_name}</TableCell>
                       <TableCell>{lesson.student_contact}</TableCell>
+                      <TableCell className="max-w-[200px] truncate" title={lesson.reschedule_notes || ''}>
+                        {lesson.reschedule_requested && lesson.reschedule_notes ? (
+                          <div className="text-amber-700 italic flex items-center gap-1.5 whitespace-nowrap overflow-hidden text-ellipsis">
+                            <AlertCircle className="w-3 h-3 flex-shrink-0"/> 
+                            <span className="truncate">{lesson.reschedule_notes}</span>
+                          </div>
+                        ) : '-'}
+                      </TableCell>
+                      <TableCell className="text-right">
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="text-blue-600 hover:text-blue-700 hover:bg-blue-50"
+                          onClick={() => setEditingLesson(lesson)}
+                        >
+                          <Edit className="w-4 h-4 mr-1" />
+                          Modifica
+                        </Button>
+                      </TableCell>
                     </TableRow>
                   ))}
                 </TableBody>
@@ -250,6 +302,18 @@ export function AdminTabs({ initialLessons }: AdminTabsProps) {
           </CardContent>
         </Card>
       </TabsContent>
+      
+      {editingLesson && (
+        <EditLessonDialog
+          lesson={editingLesson}
+          open={!!editingLesson}
+          onOpenChange={(val) => !val && setEditingLesson(null)}
+          onSuccess={() => {
+            setEditingLesson(null)
+            router.refresh()
+          }}
+        />
+      )}
     </Tabs>
   )
 }
