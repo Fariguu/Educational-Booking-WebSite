@@ -3,7 +3,8 @@
 import { useState, useEffect } from 'react'
 import { format } from 'date-fns'
 import { it } from 'date-fns/locale'
-import { CheckCircle2, Clock, XCircle, Trash2, Loader2, AlertCircle } from 'lucide-react'
+import { useRouter } from 'next/navigation'
+import { CheckCircle2, Clock, XCircle, Trash2, Loader2, AlertCircle, Edit } from 'lucide-react'
 
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Badge } from "@/components/ui/badge"
@@ -11,6 +12,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Button } from '@/components/ui/button'
 import { removeAvailableSlot, confirmLesson, rejectLesson } from '@/app/actions/admin'
+import { EditLessonDialog } from './edit-lesson-dialog'
 
 // Definiamo il tipo basandoci sullo schema
 export type Lesson = {
@@ -34,6 +36,8 @@ export function AdminTabs({ initialLessons }: AdminTabsProps) {
   const [lessons, setLessons] = useState<Lesson[]>(initialLessons)
   const [isRemoving, setIsRemoving] = useState<string | null>(null)
   const [isProcessing, setIsProcessing] = useState<string | null>(null)
+  const [editingLesson, setEditingLesson] = useState<Lesson | null>(null)
+  const router = useRouter()
 
   // Sincronizza lo state locale quando il Server Component passa nuovi dati
   // (es. dopo router.refresh() chiamato da CreateSlotDialog)
@@ -154,6 +158,16 @@ export function AdminTabs({ initialLessons }: AdminTabsProps) {
                           <Button
                             size="sm"
                             variant="outline"
+                            className="text-blue-600 hover:text-blue-700 hover:bg-blue-50"
+                            onClick={() => setEditingLesson(lesson)}
+                            disabled={isProcessing === lesson.id}
+                          >
+                            <Edit className="w-4 h-4 mr-1" />
+                            Modifica
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="outline"
                             className="text-destructive hover:text-destructive hover:bg-destructive/10"
                             onClick={() => handleReject(lesson.id)}
                             disabled={isProcessing === lesson.id}
@@ -191,6 +205,7 @@ export function AdminTabs({ initialLessons }: AdminTabsProps) {
                     <TableHead>Studente</TableHead>
                     <TableHead>Contatto</TableHead>
                     <TableHead>Note / Spostamenti</TableHead>
+                    <TableHead className="text-right">Azioni</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -213,6 +228,17 @@ export function AdminTabs({ initialLessons }: AdminTabsProps) {
                             <span className="truncate">{lesson.reschedule_notes}</span>
                           </div>
                         ) : '-'}
+                      </TableCell>
+                      <TableCell className="text-right">
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="text-blue-600 hover:text-blue-700 hover:bg-blue-50"
+                          onClick={() => setEditingLesson(lesson)}
+                        >
+                          <Edit className="w-4 h-4 mr-1" />
+                          Modifica
+                        </Button>
                       </TableCell>
                     </TableRow>
                   ))}
@@ -276,6 +302,18 @@ export function AdminTabs({ initialLessons }: AdminTabsProps) {
           </CardContent>
         </Card>
       </TabsContent>
+      
+      {editingLesson && (
+        <EditLessonDialog
+          lesson={editingLesson}
+          open={!!editingLesson}
+          onOpenChange={(val) => !val && setEditingLesson(null)}
+          onSuccess={() => {
+            setEditingLesson(null)
+            router.refresh()
+          }}
+        />
+      )}
     </Tabs>
   )
 }

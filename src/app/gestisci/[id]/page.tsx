@@ -8,14 +8,15 @@ import { Calendar, Clock, AlertCircle } from 'lucide-react'
 // Forza rendering dinamico in app router per usare i param
 export const dynamic = 'force-dynamic'
 
-export default async function ManageLessonPage({ params }: { params: { id: string } }) {
+export default async function ManageLessonPage({ params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params;
   const supabase = await createClient()
 
   // Preleviamo i details e assicuriamoci che non sia un blocco libero
   const { data: lesson, error } = await supabase
     .from('lessons')
     .select('*')
-    .eq('id', params.id)
+    .eq('id', id)
     .single()
 
   if (error || !lesson || !lesson.student_contact) {

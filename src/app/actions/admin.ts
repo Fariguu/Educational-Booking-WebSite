@@ -186,3 +186,107 @@ export async function rejectLesson(lessonId: string) {
   revalidatePath('/')
   return { success: true }
 }
+
+export async function updateLessonTime(lessonId: string, newStartTime: string, newEndTime: string) {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return { error: "Non autorizzato" }
+
+  const { data: lesson, error: fetchErr } = await supabase
+    .from('lessons')
+    .select('*')
+    .eq('id', lessonId)
+    .single()
+
+  if (fetchErr || !lesson) return { error: "Lezione non trovata" }
+
+  const { error } = await supabase
+    .from('lessons')
+    .update({ 
+      start_time: newStartTime,
+      end_time: newEndTime,
+      reschedule_requested: false,
+      reschedule_notes: null
+    })
+    .eq('id', lessonId)
+
+  if (error) return { error: error.message }
+
+  // Notify student via Resend
+  if (resend && lesson.student_contact) {
+    const fromEmail = process.env.RESEND_FROM_EMAIL || 'Prenotazioni <onboarding@resend.dev>'
+    try {
+      await resend.emails.send({
+        from: fromEmail,
+        to: lesson.student_contact,
+        subject: 'Aggiornamento Orario Lezione',
+        html: `<p>Ciao <strong>${lesson.student_name}</strong>,</p>
+               <p>Il professore ha modificato l'orario della tua lezione.</p>
+               <p>Il nuovo orario confermato è: <br/><strong>Inizio:</strong> ${new Date(newStartTime).toLocaleString('it-IT')}<br/><strong>Fine:</strong> ${new Date(newEndTime).toLocaleString('it-IT')}</p>`,
+      })
+    } catch (e) { console.error("Errore invio email aggiornamento:", e) }
+  }
+
+  revalidatePath('/admin')
+  revalidatePath('/')
+  return { success: true }
+}
+
+export async function cancelLessonWithChoice(lessonId: string, keepAvailable: boolean) {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return { error: "Non autorizzato" }
+
+  const { data: lesson, error: fetchErr } = await supabase
+    .from('lessons')
+    .select('student_contact, student_name')
+    .eq('id', lessonId)
+    .single()
+
+  if (fetchErr) return { error: "Lezione non trovata" }
+
+  if (keepAvailable) {
+    // Reset status to available, wipe student data
+    const { error } = await supabase
+      .from('lessons')
+      .update({
+        status: 'available',
+        is_available: true,
+        student_name: null,
+        student_contact: null,
+        notes: null,
+        reschedule_requested: false,
+        reschedule_notes: null
+      })
+      .eq('id', lessonId)
+    
+    if (error) return { error: error.message }
+  } else {
+    // Completely hard delete the row
+    const { error } = await supabase
+      .from('lessons')
+      .delete()
+      .eq('id', lessonId)
+
+    if (error) return { error: error.message }
+  }
+
+  // Notify student of cancellation
+  if (resend && lesson?.student_contact) {
+    const fromEmail = process.env.RESEND_FROM_EMAIL || 'Prenotazioni <onboarding@resend.dev>'
+    try {
+      await resend.emails.send({
+        from: fromEmail,
+        to: lesson.student_contact,
+        subject: 'Lezione Annullata',
+        html: `<p>Ciao <strong>${lesson.student_name}</strong>,</p>
+               <p>Purtroppo la tua lezione programmata è stata annullata dal professore per un imprevisto. Ci scusiamo per il disagio.</p>
+               <p>Puoi visitare nuovamente la piattaforma per cercare e prenotare un nuovo orario disponibile.</p>`,
+      })
+    } catch (e) { console.error("Errore invio email annullamento:", e) }
+  }
+
+  revalidatePath('/admin')
+  revalidatePath('/')
+  return { success: true }
+}
