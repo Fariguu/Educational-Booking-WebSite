@@ -25,7 +25,7 @@ export default async function AdminDashboardPage() {
                 <h2 className="text-2xl font-bold">Dashboard Prenotazioni</h2>
                 <CreateSlotDialog />
             </div>
-            
+
             <p className="text-muted-foreground mb-6">
                 Gestisci le richieste degli studenti, visualizza le prenotazioni confermate e i tuoi slot liberi.
             </p>

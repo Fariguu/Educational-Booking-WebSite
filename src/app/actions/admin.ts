@@ -16,7 +16,7 @@ import { addDays } from 'date-fns'
 
 export async function createSlot(formData: z.infer<typeof CreateSlotSchema>) {
   const supabase = await createClient()
-  
+
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return { error: "Non autorizzato" }
 
@@ -24,26 +24,26 @@ export async function createSlot(formData: z.infer<typeof CreateSlotSchema>) {
   if (!validated.success) return { error: "Dati non validi" }
 
   const { start_time, end_time, is_recurring, recurrence_end_date, duration_minutes } = validated.data
-  
+
   const slotsToInsert = []
-  
+
   if (is_recurring && recurrence_end_date) {
     const start = new Date(start_time)
     const end = new Date(recurrence_end_date)
-    
+
     // Loop aggiungendo 7 giorni alla volta finché non superiamo la endDate
     let currentStart = new Date(start)
     while (currentStart <= end) {
       const currentEnd = new Date(currentStart)
       currentEnd.setMinutes(currentEnd.getMinutes() + duration_minutes)
-      
+
       slotsToInsert.push({
         start_time: currentStart.toISOString(),
         end_time: currentEnd.toISOString(), // ISO renderà l'ora UTC corretta basata sulla data locale
         is_available: true,
         status: 'available'
       })
-      
+
       // Prossima settimana (+ 7 giorni usando date-fns per preservare l'ora locale attraverso DST)
       currentStart = addDays(currentStart, 7)
     }
@@ -64,13 +64,13 @@ export async function createSlot(formData: z.infer<typeof CreateSlotSchema>) {
 
   // Invalidazione per aggiornare sia la dashboard admin sia il calendario pubblico
   revalidatePath('/admin')
-  revalidatePath('/') 
+  revalidatePath('/')
   return { success: true }
 }
 
 export async function removeAvailableSlot(slotId: string) {
   const supabase = await createClient()
-  
+
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return { error: "Non autorizzato" }
 
@@ -90,9 +90,9 @@ export async function removeAvailableSlot(slotId: string) {
 
 import { Resend } from 'resend'
 
-const resend = process.env.RESEND_API_KEY && process.env.RESEND_API_KEY !== 're_...' 
-    ? new Resend(process.env.RESEND_API_KEY) 
-    : null;
+const resend = process.env.RESEND_API_KEY && process.env.RESEND_API_KEY !== 're_...'
+  ? new Resend(process.env.RESEND_API_KEY)
+  : null;
 
 export async function confirmLesson(lessonId: string) {
   const supabase = await createClient()
@@ -119,20 +119,20 @@ export async function confirmLesson(lessonId: string) {
   const endDate = new Date(lesson.end_time)
   const formatS = startDate.toISOString().replace(/[-:]/g, '').split('.')[0] + 'Z'
   const formatE = endDate.toISOString().replace(/[-:]/g, '').split('.')[0] + 'Z'
-  
+
   const gcalUrl = `https://calendar.google.com/calendar/render?action=TEMPLATE&text=Lezione+Privata+-+${encodeURIComponent(lesson.student_name || 'Studente')}&dates=${formatS}/${formatE}&details=Contatto:+${encodeURIComponent(lesson.student_contact || '')}`
 
   // Notify via Resend
   if (resend && lesson.student_contact) {
     const fromEmail = process.env.RESEND_FROM_EMAIL || 'Prenotazioni <onboarding@resend.dev>'
     try {
-        await resend.emails.send({
-            from: fromEmail,
-            to: lesson.student_contact,
-            subject: 'Lezione Confermata!',
-            html: `<p>Ciao <strong>${lesson.student_name}</strong>,</p><p>Ottime notizie! La tua lezione del ${startDate.toLocaleDateString('it-IT')} è stata ufficialmente confermata!</p>`,
-        })
-    } catch(e) { console.error("Errore invio email conferma:", e) }
+      await resend.emails.send({
+        from: fromEmail,
+        to: lesson.student_contact,
+        subject: 'Lezione Confermata!',
+        html: `<p>Ciao <strong>${lesson.student_name}</strong>,</p><p>Ottime notizie! La tua lezione del ${startDate.toLocaleDateString('it-IT')} è stata ufficialmente confermata!</p>`,
+      })
+    } catch (e) { console.error("Errore invio email conferma:", e) }
   }
 
   revalidatePath('/admin')
@@ -150,27 +150,27 @@ export async function rejectLesson(lessonId: string) {
   // Resetta lo slot, rimettendolo a disposizione per altri
   const { error } = await supabase
     .from('lessons')
-    .update({ 
-        status: 'available', 
-        is_available: true, 
-        student_name: null, 
-        student_contact: null, 
-        notes: null 
+    .update({
+      status: 'available',
+      is_available: true,
+      student_name: null,
+      student_contact: null,
+      notes: null
     })
     .eq('id', lessonId)
 
   if (error) return { error: error.message }
 
   if (resend && lesson?.student_contact) {
-      const fromEmail = process.env.RESEND_FROM_EMAIL || 'Prenotazioni <onboarding@resend.dev>'
-      try {
-        await resend.emails.send({
-            from: fromEmail,
-            to: lesson.student_contact,
-            subject: 'Aggiornamento Prenotazione',
-            html: `<p>Ciao <strong>${lesson.student_name}</strong>,</p><p>Purtroppo non è stato possibile confermare l'orario richiesto. Riprova sul sito con una nuova disponibilità!</p>`,
-        })
-    } catch(e) { console.error("Errore invio email rifiuto:", e) }
+    const fromEmail = process.env.RESEND_FROM_EMAIL || 'Prenotazioni <onboarding@resend.dev>'
+    try {
+      await resend.emails.send({
+        from: fromEmail,
+        to: lesson.student_contact,
+        subject: 'Aggiornamento Prenotazione',
+        html: `<p>Ciao <strong>${lesson.student_name}</strong>,</p><p>Purtroppo non è stato possibile confermare l'orario richiesto. Riprova sul sito con una nuova disponibilità!</p>`,
+      })
+    } catch (e) { console.error("Errore invio email rifiuto:", e) }
   }
 
   revalidatePath('/admin')

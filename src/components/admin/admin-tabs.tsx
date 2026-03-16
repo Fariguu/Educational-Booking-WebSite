@@ -129,23 +129,23 @@ export function AdminTabs({ initialLessons }: AdminTabsProps) {
                       </TableCell>
                       <TableCell className="text-right">
                         <div className="flex justify-end gap-2">
-                          <Button 
-                            size="sm" 
-                            variant="outline" 
+                          <Button
+                            size="sm"
+                            variant="outline"
                             className="text-green-600 hover:text-green-700 hover:bg-green-50"
                             onClick={() => handleConfirm(lesson.id)}
                             disabled={isProcessing === lesson.id}
-                           >
+                          >
                             {isProcessing === lesson.id ? <Loader2 className="w-4 h-4 mr-1 animate-spin" /> : <CheckCircle2 className="w-4 h-4 mr-1" />}
                             Conferma
                           </Button>
-                          <Button 
-                            size="sm" 
-                            variant="outline" 
+                          <Button
+                            size="sm"
+                            variant="outline"
                             className="text-destructive hover:text-destructive hover:bg-destructive/10"
                             onClick={() => handleReject(lesson.id)}
                             disabled={isProcessing === lesson.id}
-                           >
+                          >
                             {isProcessing === lesson.id ? <Loader2 className="w-4 h-4 mr-1 animate-spin" /> : <XCircle className="w-4 h-4 mr-1" />}
                             Rifiuta
                           </Button>
@@ -170,9 +170,9 @@ export function AdminTabs({ initialLessons }: AdminTabsProps) {
           </CardHeader>
           <CardContent>
             {confirmedLessons.length === 0 ? (
-               <p className="text-center text-muted-foreground py-8">Nessuna lezione confermata.</p>
+              <p className="text-center text-muted-foreground py-8">Nessuna lezione confermata.</p>
             ) : (
-                <Table>
+              <Table>
                 <TableHeader>
                   <TableRow>
                     <TableHead>Data e Ora</TableHead>
@@ -206,10 +206,10 @@ export function AdminTabs({ initialLessons }: AdminTabsProps) {
             </CardDescription>
           </CardHeader>
           <CardContent>
-             {availableSlots.length === 0 ? (
-               <p className="text-center text-muted-foreground py-8">Non hai nessuno slot libero futuro pubblicato.</p>
+            {availableSlots.length === 0 ? (
+              <p className="text-center text-muted-foreground py-8">Non hai nessuno slot libero futuro pubblicato.</p>
             ) : (
-                <Table>
+              <Table>
                 <TableHeader>
                   <TableRow>
                     <TableHead>Data e Ora</TableHead>
@@ -227,19 +227,19 @@ export function AdminTabs({ initialLessons }: AdminTabsProps) {
                         <Badge variant="secondary">Pubblico</Badge>
                       </TableCell>
                       <TableCell className="text-right">
-                        <Button 
-                            size="sm" 
-                            variant="ghost" 
-                            className="text-destructive"
-                            onClick={() => handleRemove(lesson.id)}
-                            disabled={isRemoving === lesson.id}
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          className="text-destructive"
+                          onClick={() => handleRemove(lesson.id)}
+                          disabled={isRemoving === lesson.id}
                         >
-                            {isRemoving === lesson.id ? (
-                                <Loader2 className="w-4 h-4 mr-1 animate-spin" />
-                            ) : (
-                                <Trash2 className="w-4 h-4 mr-1" />
-                            )}
-                            Rimuovi
+                          {isRemoving === lesson.id ? (
+                            <Loader2 className="w-4 h-4 mr-1 animate-spin" />
+                          ) : (
+                            <Trash2 className="w-4 h-4 mr-1" />
+                          )}
+                          Rimuovi
                         </Button>
                       </TableCell>
                     </TableRow>
