@@ -125,12 +125,21 @@ export async function confirmLesson(lessonId: string) {
   // Notify via Resend
   if (resend && lesson.student_contact) {
     const fromEmail = process.env.RESEND_FROM_EMAIL || 'Prenotazioni <onboarding@resend.dev>'
+    const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'
+    const manageUrl = `${siteUrl}/gestisci/${lessonId}`
+    
     try {
       await resend.emails.send({
         from: fromEmail,
         to: lesson.student_contact,
         subject: 'Lezione Confermata!',
-        html: `<p>Ciao <strong>${lesson.student_name}</strong>,</p><p>Ottime notizie! La tua lezione del ${startDate.toLocaleDateString('it-IT')} è stata ufficialmente confermata!</p>`,
+        html: `<p>Ciao <strong>${lesson.student_name}</strong>,</p>
+               <p>Ottime notizie! La tua lezione del ${startDate.toLocaleDateString('it-IT')} è stata ufficialmente confermata!</p>
+               <p><a href="${gcalUrl}">Aggiungi a Google Calendar</a></p>
+               <hr />
+               <p>Hai un imprevisto e vuoi richiedere di spostare la lezione?</p>
+               <p><a href="${manageUrl}" style="background-color: #9333ea; color: white; padding: 10px 18px; text-decoration: none; border-radius: 6px; display: inline-block;">Gestisci Prenotazione</a></p>
+               <p><small>(Link privato, non inoltrare a nessuno)</small></p>`,
       })
     } catch (e) { console.error("Errore invio email conferma:", e) }
   }
