@@ -35,6 +35,27 @@ import { bookLesson } from "@/app/actions/booking";
 import { Checkbox } from "@/components/ui/checkbox";
 import Link from "next/link";
 
+function generateTimeSlots(start: Date, end: Date) {
+  const slots = [];
+  let current = start.getTime();
+  const duration = 60 * 60000; // 60 minuti
+  const interval = 30 * 60000; // scatti da 30 minuti
+
+  while (current + duration <= end.getTime()) {
+      slots.push({
+          start: new Date(current),
+          end: new Date(current + duration)
+      });
+      current += interval;
+  }
+  
+  if (slots.length === 0 && start.getTime() < end.getTime()) {
+      slots.push({ start, end });
+  }
+  
+  return slots;
+}
+
 interface Slot {
   id: string;
   start_time: string;
@@ -62,6 +83,17 @@ export default function BookingCalendar() {
   const [isPending, setIsPending] = useState(false);
   const [turnstileToken, setTurnstileToken] = useState("");
   const [turnstileKey, setTurnstileKey] = useState(0);
+  const [selectedTimeRange, setSelectedTimeRange] = useState<{start: Date, end: Date} | null>(null);
+
+  const availableTimeRanges = selectedSlot ? generateTimeSlots(new Date(selectedSlot.start_time), new Date(selectedSlot.end_time)) : [];
+
+  useEffect(() => {
+      if (availableTimeRanges.length === 1) {
+          setSelectedTimeRange(availableTimeRanges[0]);
+      } else {
+          setSelectedTimeRange(null);
+      }
+  }, [selectedSlot]);
 
   const { register, handleSubmit, reset, setValue, watch, formState: { errors } } = useForm<FormValues>({
     resolver: zodResolver(formSchema),
@@ -104,9 +136,15 @@ export default function BookingCalendar() {
     availableDays.some((d) => isSameDay(d, date));
 
   const onSubmit = async (values: FormValues) => {
-    if (!selectedSlot || !turnstileToken) return;
+    if (!selectedSlot || !turnstileToken || !selectedTimeRange) return;
     setIsPending(true);
-    const result = await bookLesson({ ...values, slotId: selectedSlot.id, turnstileToken });
+    const result = await bookLesson({
+       ...values,
+       slotId: selectedSlot.id,
+       turnstileToken,
+       requestedStartTime: selectedTimeRange.start.toISOString(),
+       requestedEndTime: selectedTimeRange.end.toISOString()
+    });
     if (result.error) {
       setError(result.error);
       setTurnstileToken("");
@@ -336,6 +374,29 @@ export default function BookingCalendar() {
 
               <form id="booking-form" onSubmit={handleSubmit(onSubmit)} className="space-y-4">
                 <div className="space-y-2">
+                    <Label>Seleziona Orario</Label>
+                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 mt-2 max-h-40 overflow-y-auto pr-1">
+                        {availableTimeRanges.map((range, idx) => {
+                            const isSelected = selectedTimeRange?.start.getTime() === range.start.getTime();
+                            return (
+                                <Button 
+                                    key={idx}
+                                    type="button"
+                                    variant={isSelected ? "default" : "outline"}
+                                    onClick={() => setSelectedTimeRange(range)}
+                                    className={`w-full text-xs font-medium ${isSelected ? 'bg-purple-600 text-white hover:bg-purple-700' : ''}`}
+                                >
+                                    {format(range.start, "HH:mm")} - {format(range.end, "HH:mm")}
+                                </Button>
+                            )
+                        })}
+                    </div>
+                    {!selectedTimeRange && (
+                        <p className="text-xs text-destructive">Scegli un orario per procedere con la prenotazione.</p>
+                    )}
+                </div>
+
+                <div className="space-y-2">
                   <Label htmlFor="studentName">Nome Completo</Label>
                   <Input id="studentName" {...register("studentName")} placeholder="Mario Rossi" />
                   {errors.studentName && <p className="text-xs text-destructive">{errors.studentName.message}</p>}
@@ -356,7 +417,7 @@ export default function BookingCalendar() {
                       id="booking-privacy"
                       checked={privacyChecked}
                       onCheckedChange={(checked) => setValue('privacy', checked === true, { shouldValidate: true })}
-                      className="mt-0.5"
+                      className="mt-0.5 border-purple-200 text-purple-600 focus-visible:ring-purple-600"
                     />
                     <Label htmlFor="booking-privacy" className="text-sm font-normal leading-relaxed cursor-pointer">
                       Ho letto e accetto la{' '}
@@ -383,7 +444,7 @@ export default function BookingCalendar() {
             <Button
               type="submit"
               form="booking-form"
-              disabled={isPending || !turnstileToken || !privacyChecked}
+              disabled={isPending || !turnstileToken || !privacyChecked || !selectedTimeRange}
               className="bg-purple-600 hover:bg-purple-700 text-white"
             >
               {isPending ? (
