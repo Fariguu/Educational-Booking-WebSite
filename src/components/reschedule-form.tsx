@@ -48,7 +48,7 @@ export default function RescheduleForm({ slotId }: { slotId: string }) {
       } else {
         setSuccess(true)
       }
-    } catch (err) {
+    } catch (_err) {
       setError("Si è verificato un errore di rete.")
     } finally {
       setIsPending(false)

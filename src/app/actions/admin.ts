@@ -212,6 +212,14 @@ export async function updateLessonTime(lessonId: string, newStartTime: string, n
 
   if (error) return { error: error.message }
 
+  // Genera link Google Calendar aggiornato
+  const startDate = new Date(newStartTime)
+  const endDate = new Date(newEndTime)
+  const formatS = startDate.toISOString().replace(/[-:]/g, '').split('.')[0] + 'Z'
+  const formatE = endDate.toISOString().replace(/[-:]/g, '').split('.')[0] + 'Z'
+
+  const gcalUrl = `https://calendar.google.com/calendar/render?action=TEMPLATE&text=Lezione+Aggiornata+-+${encodeURIComponent(lesson.student_name || 'Studente')}&dates=${formatS}/${formatE}&details=Contatto:+${encodeURIComponent(lesson.student_contact || '')}`
+
   // Notify student via Resend
   if (resend && lesson.student_contact) {
     const fromEmail = process.env.RESEND_FROM_EMAIL || 'Prenotazioni <onboarding@resend.dev>'
@@ -222,14 +230,15 @@ export async function updateLessonTime(lessonId: string, newStartTime: string, n
         subject: 'Aggiornamento Orario Lezione',
         html: `<p>Ciao <strong>${lesson.student_name}</strong>,</p>
                <p>Il professore ha modificato l'orario della tua lezione.</p>
-               <p>Il nuovo orario confermato è: <br/><strong>Inizio:</strong> ${new Date(newStartTime).toLocaleString('it-IT')}<br/><strong>Fine:</strong> ${new Date(newEndTime).toLocaleString('it-IT')}</p>`,
+               <p>Il nuovo orario confermato è: <br/><strong>Inizio:</strong> ${startDate.toLocaleString('it-IT')}<br/><strong>Fine:</strong> ${endDate.toLocaleString('it-IT')}</p>
+               <p><a href="${gcalUrl}">Aggiungi al tuo Google Calendar</a></p>`,
       })
     } catch (e) { console.error("Errore invio email aggiornamento:", e) }
   }
 
   revalidatePath('/admin')
   revalidatePath('/')
-  return { success: true }
+  return { success: true, gcalUrl }
 }
 
 export async function cancelLessonWithChoice(lessonId: string, keepAvailable: boolean) {

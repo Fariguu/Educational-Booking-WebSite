@@ -87,6 +87,7 @@ export default function BookingCalendar() {
 
   const availableTimeRanges = selectedSlot ? generateTimeSlots(new Date(selectedSlot.start_time), new Date(selectedSlot.end_time)) : [];
 
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
       if (availableTimeRanges.length === 1) {
           setSelectedTimeRange(availableTimeRanges[0]);
@@ -131,9 +132,6 @@ export default function BookingCalendar() {
   const slotsForDay = selectedDate
     ? slots.filter((s) => isSameDay(new Date(s.start_time), selectedDate))
     : [];
-
-  const isDateWithAvailableSlots = (date: Date) =>
-    availableDays.some((d) => isSameDay(d, date));
 
   const onSubmit = async (values: FormValues) => {
     if (!selectedSlot || !turnstileToken || !selectedTimeRange) return;

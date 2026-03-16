@@ -10,7 +10,7 @@ import * as z from "zod";
 import { Turnstile } from "@marsidev/react-turnstile";
 
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
@@ -69,6 +69,7 @@ export default function BookingDashboard() {
 
     const availableTimeRanges = selectedSlot ? generateTimeSlots(new Date(selectedSlot.start_time), new Date(selectedSlot.end_time)) : [];
 
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     useEffect(() => {
         if (availableTimeRanges.length === 1) {
             setSelectedTimeRange(availableTimeRanges[0]);
@@ -132,7 +133,7 @@ export default function BookingDashboard() {
             setSelectedSlot(null);
             reset();
             fetchSlots();
-        } catch (err) {
+        } catch (_err) {
             setError("Si è verificato un errore imprevisto.");
         } finally {
             setIsPending(false);
@@ -162,7 +163,7 @@ export default function BookingDashboard() {
                 <div className="flex flex-col items-center justify-center p-8 text-center border border-green-200 rounded-xl bg-green-50 text-green-800 mb-6">
                     <CheckCircle2 className="w-12 h-12 text-green-600 mb-4" />
                     <h3 className="text-xl font-bold mb-2">Prenotazione Inviata!</h3>
-                    <p className="mb-4">Riceverai un'email di conferma non appena il professore avrà approvato la richiesta.</p>
+                    <p className="mb-4">Riceverai un&apos;email di conferma non appena il professore avrà approvato la richiesta.</p>
                     <Button onClick={() => setSuccess(false)} variant="outline">Ok, grazie</Button>
                 </div>
             )}

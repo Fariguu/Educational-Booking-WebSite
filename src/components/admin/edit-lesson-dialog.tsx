@@ -1,8 +1,6 @@
 'use client'
 
 import { useState } from 'react'
-import { format } from 'date-fns'
-import { it } from 'date-fns/locale'
 import { Loader2, Edit, AlertCircle, Trash } from 'lucide-react'
 
 import {
@@ -65,6 +63,9 @@ export function EditLessonDialog({ lesson, open, onOpenChange, onSuccess }: Edit
       setError(res.error)
     } else {
       toast.success("Orario aggiornato e studente avvisato via mail.")
+      if (res.gcalUrl) {
+          window.open(res.gcalUrl, '_blank')
+      }
       onSuccess()
       onOpenChange(false)
     }
@@ -102,7 +103,7 @@ export function EditLessonDialog({ lesson, open, onOpenChange, onSuccess }: Edit
                         <Edit className="w-5 h-5"/> Modifica Lezione
                     </DialogTitle>
                     <DialogDescription>
-                        Gestisci l'orario o annulla la lezione per <strong>{lesson.student_name}</strong>.
+                        Gestisci l&apos;orario o annulla la lezione per <strong>{lesson.student_name}</strong>.
                     </DialogDescription>
                 </DialogHeader>
 
@@ -112,7 +113,7 @@ export function EditLessonDialog({ lesson, open, onOpenChange, onSuccess }: Edit
                     {lesson.reschedule_requested && (
                         <div className="bg-amber-50 border border-amber-200 text-amber-800 p-3 rounded-md text-sm">
                             <h4 className="font-semibold flex items-center gap-1.5"><AlertCircle className="w-4 h-4"/> Studente chiede spostamento</h4>
-                            <p className="mt-1 italic">"{lesson.reschedule_notes}"</p>
+                            <p className="mt-1 italic">&quot;{lesson.reschedule_notes}&quot;</p>
                         </div>
                     )}
 
@@ -155,7 +156,7 @@ export function EditLessonDialog({ lesson, open, onOpenChange, onSuccess }: Edit
                         <AlertCircle className="w-5 h-5"/> Conferma Annullamento
                     </DialogTitle>
                     <DialogDescription>
-                        Stai per annullare la lezione di <strong>{lesson.student_name}</strong>. Riceverà un'email di avviso.
+                        Stai per annullare la lezione di <strong>{lesson.student_name}</strong>. Riceverà un&apos;email di avviso.
                     </DialogDescription>
                 </DialogHeader>
 
@@ -168,14 +169,14 @@ export function EditLessonDialog({ lesson, open, onOpenChange, onSuccess }: Edit
                             <RadioGroupItem value="keep" id="r1" />
                             <Label htmlFor="r1" className="cursor-pointer flex-1">
                                 <span className="block font-semibold">Torna Disponibile al Pubblico</span>
-                                <span className="block text-xs text-muted-foreground font-normal mt-0.5">La lezione si smonta ma l'orario torna verde sul calendario per altri.</span>
+                                <span className="block text-xs text-muted-foreground font-normal mt-0.5">La lezione si smonta ma l&apos;orario torna verde sul calendario per altri.</span>
                             </Label>
                         </div>
                         <div className="flex items-center space-x-2 border p-3 rounded-md has-[:checked]:border-destructive has-[:checked]:bg-destructive/5">
                             <RadioGroupItem value="delete" id="r2" />
                             <Label htmlFor="r2" className="cursor-pointer flex-1">
                                 <span className="block font-semibold text-destructive">Elimina Definitivamente</span>
-                                <span className="block text-xs text-muted-foreground font-normal mt-0.5">L'orario svanisce nel nulla e non prenderai più impegni in quel frangente.</span>
+                                <span className="block text-xs text-muted-foreground font-normal mt-0.5">L&apos;orario svanisce nel nulla e non prenderai più impegni in quel frangente.</span>
                             </Label>
                         </div>
                     </RadioGroup>

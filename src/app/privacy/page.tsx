@@ -36,7 +36,7 @@ export default function PrivacyPage() {
             </h2>
             <p>
               Il titolare del trattamento dei dati personali è il docente privato
-              che gestisce questo sito di prenotazioni (di seguito "il Professore").
+              che gestisce questo sito di prenotazioni (di seguito &quot;il Professore&quot;).
               Per qualsiasi richiesta relativa ai tuoi dati personali, puoi
               contattarlo tramite il{" "}
               <Link href="/contatti" className="text-indigo-600 hover:underline">

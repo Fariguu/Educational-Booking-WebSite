@@ -23,10 +23,11 @@ Gestisce gli slot temporali e le relative prenotazioni.
   - `is_available` (BOOLEAN): Definisce se lo slot è pubblico e libero.
   - `status` (TEXT): Enum tra `available`, `pending`, `confirmed`.
   - `student_name`, `student_contact`, `notes` (TEXT): Dettagli dello studente.
+  - `reschedule_requested` (BOOLEAN) / `reschedule_notes` (TEXT): Tracciano le richieste di spostamento.
 - **Sicurezza (RLS)**:
   - Lettura pubblica limitata ai soli record con `is_available = true`.
-  - Scrittura (Update) pubblica consentita solo per passare da `available` a `pending` durante una prenotazione.
-  - Accesso CRUD completo garantito solo agli amministratori autenticati.
+  - Scrittura pubblica bloccata. La prenotazione o il reschedule (che convertono rispettivamente in `pending` o in richiesta esplicita) avvengono tramite RPC o con bypass `createAdminClient` interno alle Server Actions.
+  - Accesso CRUD completo garantito solo agli amministratori autenticati via UI.
 
 ### Tabella `contacts`
 Gestisce i messaggi inviati tramite il modulo di contatto.
@@ -36,16 +37,16 @@ Gestisce i messaggi inviati tramite il modulo di contatto.
 ## 3. Server Actions (`src/app/actions/`)
 L'applicazione sfrutta il pattern delle Server Actions di Next.js per isolare la logica di business e impedire l'esposizione diretta delle API.
 
-- **`booking.ts` (`bookLesson`)**: 
-  - Valida i dati di prenotazione dello studente con Zod.
-  - Verifica il token anti-spam di Turnstile chiamando le API di Cloudflare.
-  - Esegue un aggiornamento atomico a livello di database utilizzando vincoli di concorrenza (`eq('is_available', true)`) per evitare "double bookings".
-  - Invia una notifica di presa in carico via Resend.
+- **`booking.ts`**: 
+  - **`bookLesson`**: Valida i dati di prenotazione dello studente con Zod e Turnstile, inserisce invocando la stored procedure `split_and_book_slot` su Supabase per garantire il partizionamento frazionale dei Mega-Slot concorrenti, poi invia l'email tramite Resend includendo il link magico alla gestione appuntamento.
+  - **`requestReschedule`**: Raccoglie dal link magico la richiesta dello studente (motivo/richiesta spostamento), si autentica come bypass admin role e aggiorna il record avvisando il professore via Resend.
 - **`contact.ts` (`sendContactMessage`)**:
   - Simile a `booking.ts` per validazione e anti-spam. Salva il messaggio nella tabella `contacts` e inoltra una notifica email immediata all'amministratore.
 - **`admin.ts`**:
-  - **`createSlot`**: Inserisce nuove finestre temporali, inclusa la logica per generare disponibilità ricorrenti aggiungendo settimane tramite `date-fns`.
-  - **`confirmLesson` / `rejectLesson`**: Modificano lo stato della lezione, inviano l'email di notifica finale e, nel caso di conferma, generano dinamicamente un URL con i dettagli precompilati per l'aggiunta su Google Calendar.
+  - **`createSlot`**: Inserisce nuove finestre temporali, generabili in via ricorsiva tramite `date-fns`.
+  - **`confirmLesson` / `rejectLesson`**: Approvano o bocciano la lezione inviando note via email (incluso il link GCal).
+  - **`updateLessonTime`**: Permette il CRUD di aggiornamento esplicito degli orari per accogliere i Reschedule.
+  - **`cancelLessonWithChoice`**: Permette ad admin di distruggere record postumi (ripristinando la disponibilità verde sul calendario, o cancellando la fascia per sé).
 
 ## 4. Componenti UI Principali (`src/components/`)
 I componenti dell'interfaccia si appoggiano profondamente a `shadcn/ui` per garantire accessibilità e un design sistematico.

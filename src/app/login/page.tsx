@@ -75,7 +75,7 @@ export default function LoginPage() {
         setTypedEmail(data.email)
         setSuccess(true)
       }
-    } catch (err) {
+    } catch (_err) {
       setError("Si è verificato un errore inaspettato.")
     } finally {
       setIsPending(false)
@@ -93,7 +93,7 @@ export default function LoginPage() {
       } else {
         router.push('/admin')
       }
-    } catch (err) {
+    } catch (_err) {
       setError("Errore durante la verifica del codice.")
     } finally {
       setIsVerifying(false)
@@ -115,7 +115,7 @@ export default function LoginPage() {
             </CardHeader>
             <CardContent className="space-y-4">
                 <p className="text-sm text-muted-foreground">
-                    Puoi cliccare sul link nell'email oppure inserire qui sotto il <strong>codice a 6 cifre</strong> presente nel testo del messaggio:
+                    Puoi cliccare sul link nell&apos;email oppure inserire qui sotto il <strong>codice a 6 cifre</strong> presente nel testo del messaggio:
                 </p>
                 
                 <div className="space-y-2">
@@ -149,12 +149,12 @@ export default function LoginPage() {
 
                 <div className="flex items-center justify-center text-xs text-muted-foreground pt-4 border-t">
                   <Loader2 className="mr-2 h-3 w-3 animate-spin" />
-                  In attesa di conferma dall'email...
+                  In attesa di conferma dall&apos;email...
                 </div>
             </CardContent>
             <CardFooter className="justify-center">
               <Button variant="link" size="sm" onClick={() => setSuccess(false)}>
-                Torna all'inserimento email
+                Torna all&apos;inserimento email
               </Button>
             </CardFooter>
         </Card>
@@ -207,7 +207,7 @@ export default function LoginPage() {
         </CardContent>
         <CardFooter className="flex justify-center border-t p-4 mt-4">
             <p className="text-xs text-muted-foreground">
-                Modulo protetto e riservato esclusivamente all'amministrazione.
+                Modulo protetto e riservato esclusivamente all&apos;amministrazione.
             </p>
         </CardFooter>
       </Card>

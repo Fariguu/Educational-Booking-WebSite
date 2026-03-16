@@ -8,14 +8,14 @@ Questo documento traccia l'evoluzione architetturale dell'applicativo, partendo 
 **Obiettivo:** Finalizzare le logiche di flessibilità e gestione operativa per l'insegnante singolo prima di introdurre la complessità del multi-tenant.
 
 ### Milestone 11: Flessibilità Oraria e CRUD Avanzato
-- [ ] **11.1 - Implementazione "Mega-Slot" Dinamici**
+- [x] **11.1 - Implementazione "Mega-Slot" Dinamici**
   - **DB:** Modifica struttura `lessons` per supportare blocchi orari estesi (es. disponibilità 13:00-18:00).
   - **Frontend:** Aggiornamento di `booking-dashboard.tsx` per permettere allo studente di selezionare uno slot specifico (es. 16:15-17:15) all'interno del Mega-Slot.
   - **Backend:** Nuova Server Action per il partizionamento del record a database: lo slot prenotato diventa `pending`, mentre le fasce rimanenti (13:00-16:15 e 17:15-18:00) generano nuovi record `available`.
-- [ ] **11.2 - Sistema di Reschedule (Lato Studente)**
+- [x] **11.2 - Sistema di Reschedule (Lato Studente)**
   - **Frontend:** Modulo per la richiesta di cambio orario per lezioni già in `pending` o `confirmed`.
   - **Backend:** Aggiunta dello stato `reschedule_requested` e trigger per l'invio della notifica via Resend all'admin.
-- [ ] **11.3 - Gestione CRUD Completa (Lato Admin)**
+- [x] **11.3 - Gestione CRUD Completa (Lato Admin)**
   - **Frontend:** Estensione dell'interfaccia admin per modificare orari, aggiungere note private e gestire cancellazioni post-conferma.
   - **Backend:** Azioni di Update/Delete con integrazione Resend per avvisare automaticamente lo studente in caso di variazioni.
 

@@ -1,6 +1,6 @@
 'use server'
 
-import { createClient, createAdminClient } from '@/utils/supabase/server'
+import { createAdminClient } from '@/utils/supabase/server'
 import { Resend } from 'resend'
 import { z } from 'zod'
 
@@ -46,7 +46,7 @@ export async function bookLesson(formData: z.infer<typeof BookingSchema>) {
     if (!turnstileData.success) {
       return { error: `Validazione anti-spam fallita: ${turnstileData['error-codes']?.join(', ') || 'errore generico'}` }
     }
-  } catch (err) {
+  } catch (_err) {
     return { error: "Errore durante la verifica anti-spam." }
   }
 
@@ -121,7 +121,7 @@ export async function requestReschedule(formData: z.infer<typeof RescheduleSchem
     })
     const turnstileData = await turnstileResponse.json()
     if (!turnstileData.success) return { error: "Spam block." }
-  } catch (err) {
+  } catch (_err) {
     return { error: "Errore durante la verifica anti-spam." }
   }
 
