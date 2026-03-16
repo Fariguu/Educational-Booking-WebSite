@@ -12,6 +12,8 @@ const BookingSchema = z.object({
   studentContact: z.string().email("Inserisci un indirizzo email valido"),
   notes: z.string().optional(),
   turnstileToken: z.string().min(1, "Validazione anti-spam fallita"),
+  requestedStartTime: z.string().datetime(),
+  requestedEndTime: z.string().datetime(),
 })
 
 export async function bookLesson(formData: z.infer<typeof BookingSchema>) {
@@ -21,7 +23,7 @@ export async function bookLesson(formData: z.infer<typeof BookingSchema>) {
     return { error: validated.error.issues[0].message }
   }
 
-  const { slotId, studentName, studentContact, notes, turnstileToken } = validated.data
+  const { slotId, studentName, studentContact, notes, turnstileToken, requestedStartTime, requestedEndTime } = validated.data
 
   // 2. Verifica Turnstile
   try {
@@ -48,24 +50,27 @@ export async function bookLesson(formData: z.infer<typeof BookingSchema>) {
     return { error: "Errore durante la verifica anti-spam." }
   }
 
-  // 3. Update Supabase con controllo concorrenza
+  // 3. Update Supabase tramite RPC per partizionamento atomico (Mega-Slot)
   const supabase = await createAdminClient()
   
-  const { count, error: updateError } = await supabase
-    .from('lessons')
-    .update({
-      student_name: studentName,
-      student_contact: studentContact,
-      notes: notes,
-      is_available: false,
-      status: 'pending'
-    }, { count: 'exact' })
-    .eq('id', slotId)
-    .eq('is_available', true)
+  const { data: result, error: rpcError } = await supabase.rpc('split_and_book_slot', {
+      p_slot_id: slotId,
+      p_req_start: requestedStartTime,
+      p_req_end: requestedEndTime,
+      p_name: studentName,
+      p_email: studentContact,
+      p_notes: notes || null
+  })
 
-  if (updateError || count === 0) {
-    if (updateError) console.error("Errore Supabase:", updateError);
-    return { error: "Questo slot è stato appena prenotato da qualcun altro o non è più disponibile." }
+  // Poiché la RPC usa FOR UPDATE, se c'è un errore Postgres lo troveremo qui
+  if (rpcError) {
+    console.error("Errore Supabase RPC:", rpcError);
+    return { error: "Errore durante la prenotazione. Riprova più tardi." }
+  }
+
+  // La RPC ritorna un costrutto in formato JSONB per gestire le asserzioni custom
+  if (result && result.success === false) {
+    return { error: result.error || "Questo blocco orario è appena stato prenotato da qualcun altro." }
   }
 
   // 4. Invio email con Resend (se la chiave è presente)
@@ -77,7 +82,7 @@ export async function bookLesson(formData: z.infer<typeof BookingSchema>) {
         to: studentContact,
         subject: 'Conferma Richiesta Prenotazione',
         html: `<p>Ciao <strong>${studentName}</strong>,</p>
-               <p>Abbiamo ricevuto la tua richiesta di prenotazione per la lezione.</p>
+               <p>Abbiamo ricevuto la tua richiesta di prenotazione per la lezione (Orario: ${new Date(requestedStartTime).toLocaleTimeString('it-IT', {hour: '2-digit', minute:'2-digit'})} - ${new Date(requestedEndTime).toLocaleTimeString('it-IT', {hour: '2-digit', minute:'2-digit'})}).</p>
                <p>Riceverai una conferma definitiva non appena il professore avrà visionato la richiesta.</p>`,
       })
     } catch (emailErr) {
