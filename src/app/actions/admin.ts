@@ -41,7 +41,8 @@ export async function createSlot(formData: z.infer<typeof CreateSlotSchema>) {
         start_time: currentStart.toISOString(),
         end_time: currentEnd.toISOString(), // ISO renderà l'ora UTC corretta basata sulla data locale
         is_available: true,
-        status: 'available'
+        status: 'available',
+        professor_id: user.id
       })
 
       // Prossima settimana (+ 7 giorni usando date-fns per preservare l'ora locale attraverso DST)
@@ -53,7 +54,8 @@ export async function createSlot(formData: z.infer<typeof CreateSlotSchema>) {
       start_time: start_time,
       end_time: end_time,
       is_available: true,
-      status: 'available'
+      status: 'available',
+      professor_id: user.id
     })
   }
 

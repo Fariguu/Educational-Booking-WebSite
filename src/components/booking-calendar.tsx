@@ -74,7 +74,7 @@ const formSchema = z.object({
 });
 type FormValues = z.infer<typeof formSchema>;
 
-export default function BookingCalendar() {
+export default function BookingCalendar({ professorId }: { professorId: string }) {
   const [slots, setSlots] = useState<Slot[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -110,6 +110,7 @@ export default function BookingCalendar() {
       const { data, error: fetchError } = await supabase
         .from("lessons")
         .select("id, start_time, end_time, is_available, status")
+        .eq("professor_id", professorId)
         .gte("start_time", new Date().toISOString())
         .order("start_time", { ascending: true });
       if (fetchError) throw fetchError;

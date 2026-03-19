@@ -8,7 +8,11 @@ export const metadata: Metadata = {
     "Scegli uno slot dal calendario e prenota la tua lezione privata in pochi secondi. Nessuna registrazione richiesta.",
 };
 
-export default function PrenotaPage() {
+export default async function PrenotaPage({ params }: { params: Promise<{ professorId: string }> | { professorId: string } }) {
+  // Support for Next.js 15+ async params or Next.js 14 sync params
+  const resolvedParams = await Promise.resolve(params);
+  const professorId = resolvedParams.professorId;
+
   return (
     <main className="min-h-screen bg-background">
       <PublicNavbar />
@@ -23,7 +27,7 @@ export default function PrenotaPage() {
             disponibili. Gli orari sono mostrati nel tuo fuso orario locale.
           </p>
         </div>
-        <BookingCalendar />
+        <BookingCalendar professorId={professorId} />
       </div>
     </main>
   );

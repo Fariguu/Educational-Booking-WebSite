@@ -146,9 +146,15 @@ export async function requestReschedule(formData: z.infer<typeof RescheduleSchem
   // Notifica all'insegnante
   if (process.env.RESEND_API_KEY && process.env.RESEND_API_KEY !== 're_...') {
     const fromEmail = process.env.RESEND_FROM_EMAIL || 'Prenotazioni <onboarding@resend.dev>'
-    // L'insegnante è temporaneamente associato al destinatario hard-coded o prendiamo l'Auth user se fosse MultiTenant. In SingleTenant, mandiamo al fromEmail (o se avessimo una env var ADMIN_EMAIL). 
-    // Per ora mandiamo alla mail di onboading (o quella validata su resend)
-    const adminEmail = process.env.ADMIN_EMAIL || fromEmail
+    let adminEmail = process.env.ADMIN_EMAIL || fromEmail;
+    
+    // Recupera l'email del professore se presente
+    if (lesson.professor_id) {
+       const { data: profAuthData, error: profAuthError } = await supabase.auth.admin.getUserById(lesson.professor_id);
+       if (!profAuthError && profAuthData?.user?.email) {
+           adminEmail = profAuthData.user.email;
+       }
+    }
 
     try {
       await resend.emails.send({

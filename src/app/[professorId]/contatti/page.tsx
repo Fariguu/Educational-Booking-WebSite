@@ -9,7 +9,9 @@ export const metadata: Metadata = {
   description: "Hai domande o vuoi maggiori informazioni? Scrivimi un messaggio.",
 };
 
-export default function ContattiPage() {
+export default async function ContattiPage({ params }: { params: Promise<{ professorId: string }> | { professorId: string } }) {
+  const resolvedParams = await Promise.resolve(params);
+  const professorId = resolvedParams.professorId;
   return (
     <main className="min-h-screen bg-background">
       <PublicNavbar />
@@ -40,7 +42,7 @@ export default function ContattiPage() {
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <ContactForm />
+            <ContactForm professorId={professorId} />
           </CardContent>
         </Card>
       </div>

@@ -40,7 +40,23 @@ const features = [
   },
 ];
 
-export default function HomePage() {
+import { createClient } from "@/utils/supabase/server";
+import SearchInput from "@/components/search-input";
+
+export default async function HomePage({ searchParams }: { searchParams: Promise<{ q?: string }> | { q?: string } }) {
+  const resolvedParams = await Promise.resolve(searchParams);
+  const q = resolvedParams.q || "";
+
+  const supabase = await createClient();
+  let query = supabase.from("professors").select("id, name, bio, subjects");
+  
+  if (q) {
+    query = query.ilike("name", `%${q}%`);
+    // Note: To search in an array 'subjects' or text 'bio', you'd use .or()
+    // query = query.or(`name.ilike.%${q}%,bio.ilike.%${q}%`);
+  }
+
+  const { data: professors, error } = await query;
   return (
     <div className="min-h-screen bg-background flex flex-col">
       <PublicNavbar />
@@ -77,137 +93,75 @@ export default function HomePage() {
           </Badge>
 
           <h1 className="text-4xl md:text-6xl font-extrabold tracking-tight mb-6 leading-tight">
-            Prenota la tua{" "}
-            <span className="text-indigo-600">lezione privata</span>
+            Trova il tuo <span className="text-indigo-600">insegnante</span> ideale
           </h1>
 
           <p className="text-lg md:text-xl text-muted-foreground mb-10 max-w-xl mx-auto">
-            Scegli uno slot disponibile e prenota in pochi click.{" "}
-            <strong className="text-foreground">Senza registrazione</strong>,
-            senza attese.
+            Cerca tra i nostri docenti e prenota la tua lezione privata in pochi click. {" "}
+            <strong className="text-foreground">Senza registrazione</strong>.
           </p>
 
-          <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <Link href="/prenota">
-              <Button
-                size="lg"
-                className="w-full sm:w-auto bg-indigo-600 hover:bg-indigo-700 text-white px-8 shadow-lg shadow-indigo-200"
-              >
-                Vedi le disponibilità
-                <ArrowRight className="ml-2 w-5 h-5" />
-              </Button>
-            </Link>
-            <a href="#about">
-              <Button
-                size="lg"
-                variant="outline"
-                className="w-full sm:w-auto px-8"
-              >
-                Scopri di più
-              </Button>
-            </a>
-          </div>
+          <SearchInput />
         </div>
       </section>
 
-      {/* ── FEATURES ──────────────────────────────────────────── */}
-      <section className="py-20 bg-muted/40 border-y">
+      {/* ── PROFESSORS LIST ──────────────────────────────────────────── */}
+      <section className="py-20 bg-muted/40 border-y flex-1">
         <div className="container mx-auto px-4 max-w-5xl">
-          <div className="text-center mb-12">
-            <h2 className="text-2xl md:text-3xl font-bold tracking-tight mb-3">
-              Perché scegliermi?
+          <div className="mb-8">
+            <h2 className="text-2xl font-bold tracking-tight mb-2">
+              {q ? `Risultati per "${q}"` : "Tutti i docenti responsabili"}
             </h2>
             <p className="text-muted-foreground">
-              Un servizio pensato per rendere le lezioni semplici ed efficaci.
+              {professors && professors.length > 0 
+                ? `Trovati ${professors.length} professionisti pronti ad aiutarti.` 
+                : "Nessun docente trovato con questa ricerca."}
             </p>
           </div>
 
-          <div className="grid md:grid-cols-3 gap-6">
-            {features.map(({ icon: Icon, title, description }) => (
+          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {professors?.map((prof) => (
               <div
-                key={title}
-                className="bg-card rounded-2xl p-6 border shadow-sm hover:shadow-md transition-shadow"
+                key={prof.id}
+                className="bg-card rounded-2xl p-6 border shadow-sm hover:shadow-md transition-shadow flex flex-col"
               >
-                <div className="w-11 h-11 rounded-xl bg-indigo-50 flex items-center justify-center mb-4">
-                  <Icon className="w-5 h-5 text-indigo-600" />
+                <div className="flex items-start gap-4 mb-4">
+                  <div className="w-14 h-14 rounded-full bg-indigo-100 flex items-center justify-center text-indigo-700 font-bold text-xl flex-shrink-0">
+                    {prof.name.charAt(0).toUpperCase()}
+                  </div>
+                  <div>
+                    <h3 className="font-semibold inset-0 text-lg">{prof.name}</h3>
+                    <div className="flex flex-wrap gap-1 mt-1">
+                      {prof.subjects?.map((sub: string) => (
+                         <Badge key={sub} variant="secondary" className="text-[10px] px-1.5 py-0">{sub}</Badge>
+                      ))}
+                    </div>
+                  </div>
                 </div>
-                <h3 className="font-semibold text-base mb-2">{title}</h3>
-                <p className="text-sm text-muted-foreground leading-relaxed">
-                  {description}
+                
+                <p className="text-sm text-muted-foreground line-clamp-3 mb-6 flex-1">
+                  {prof.bio || "Insegnante qualificato e pronto ad aiutarti a raggiungere i tuoi obiettivi."}
                 </p>
+
+                <div className="flex gap-2 mt-auto">
+                    <Link href={`/${prof.id}/prenota`} className="flex-1">
+                      <Button className="w-full bg-indigo-600 hover:bg-indigo-700 text-white shadow-sm">
+                         Prenota
+                      </Button>
+                    </Link>
+                    <Link href={`/${prof.id}/contatti`} className="flex-1">
+                      <Button variant="outline" className="w-full">
+                         Contatta
+                      </Button>
+                    </Link>
+                </div>
               </div>
             ))}
           </div>
         </div>
       </section>
 
-      {/* ── ABOUT ─────────────────────────────────────────────── */}
-      <section id="about" className="py-20">
-        <div className="container mx-auto px-4 max-w-4xl">
-          <div className="flex flex-col md:flex-row items-center gap-12">
-            {/* Avatar illustrativo */}
-            <div className="flex-shrink-0">
-              <div className="relative w-44 h-44 rounded-full bg-gradient-to-br from-indigo-100 to-violet-100 flex items-center justify-center border-4 border-white shadow-xl">
-                <GraduationCap className="w-20 h-20 text-indigo-400" />
-                <div className="absolute -bottom-2 -right-2 w-10 h-10 rounded-full bg-indigo-600 flex items-center justify-center shadow">
-                  <Star className="w-5 h-5 text-white fill-white" />
-                </div>
-              </div>
-            </div>
 
-            {/* Bio */}
-            <div className="text-center md:text-left">
-              <Badge
-                variant="outline"
-                className="mb-3 text-indigo-600 border-indigo-200 bg-indigo-50"
-              >
-                Il tuo insegnante
-              </Badge>
-              <h2 className="text-2xl md:text-3xl font-bold tracking-tight mb-4">
-                Ciao, sono il Prof.
-              </h2>
-              <p className="text-muted-foreground leading-relaxed mb-4">
-                Ho una passione per la materia che insegno e cerco di
-                trasmetterla ai miei studenti con un metodo chiaro e diretto.
-                Aiuto studenti di ogni livello a superare le difficoltà e a
-                ritrovare fiducia nelle proprie capacità.
-              </p>
-              <p className="text-muted-foreground leading-relaxed mb-6">
-                Ogni lezione è personalizzata: partiamo da dove sei e arriviamo
-                dove vuoi essere.
-              </p>
-
-              <div className="flex flex-wrap gap-2 justify-center md:justify-start">
-                <Badge variant="secondary" className="text-xs">Online</Badge>
-                <Badge variant="secondary" className="text-xs">In presenza</Badge>
-                <Badge variant="secondary" className="text-xs">Tutti i livelli</Badge>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* ── CTA BANNER ────────────────────────────────────────── */}
-      <section className="py-20 bg-indigo-600">
-        <div className="container mx-auto px-4 max-w-3xl text-center text-white">
-          <h2 className="text-2xl md:text-4xl font-bold mb-4">
-            Pronto a fare il salto di qualità?
-          </h2>
-          <p className="text-indigo-100 mb-8 text-lg">
-            Scegli uno slot libero e prenota la tua prima lezione in pochi secondi.
-          </p>
-          <Link href="/prenota">
-            <Button
-              size="lg"
-              variant="secondary"
-              className="px-10 font-semibold shadow-xl hover:bg-white/90"
-            >
-              Prenota la prima lezione
-              <ArrowRight className="ml-2 w-5 h-5" />
-            </Button>
-          </Link>
-        </div>
-      </section>
 
       {/* ── FOOTER ────────────────────────────────────────────── */}
       <footer className="border-t py-8 bg-card">
