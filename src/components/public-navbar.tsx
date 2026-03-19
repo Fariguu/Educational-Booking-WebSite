@@ -17,19 +17,24 @@ export default function PublicNavbar() {
         </Link>
 
         {/* Nav links */}
-        <nav className="hidden sm:flex items-center gap-6 text-sm font-medium text-muted-foreground">
+        <nav className="hidden sm:flex items-center gap-6 text-sm font-medium text-muted-foreground mr-6">
           <Link href="/" className="hover:text-foreground transition-colors">
             Cerca Docente
           </Link>
         </nav>
 
-        {/* CTA */}
-        <Link href="/">
-          <Button size="sm" className="bg-indigo-600 hover:bg-indigo-700 text-white">
-            Trova un Insegnante
-            <ArrowRight className="ml-1.5 w-4 h-4" />
-          </Button>
-        </Link>
+        {/* CTA & Auth */}
+        <div className="flex items-center gap-4">
+          <Link href="/?auth=login" className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors hidden sm:block">
+            Accedi
+          </Link>
+          <Link href="/">
+            <Button size="sm" className="bg-indigo-600 hover:bg-indigo-700 text-white">
+              Cerca
+              <ArrowRight className="ml-1.5 w-4 h-4" />
+            </Button>
+          </Link>
+        </div>
       </div>
     </header>
   );

@@ -3,12 +3,13 @@
 import { createClient } from '@/utils/supabase/server'
 import { z } from 'zod'
 
-const LoginSchema = z.object({
+const AuthSchema = z.object({
   email: z.string().email("Inserisci un indirizzo email valido"),
+  password: z.string().min(6, "La password deve contenere almeno 6 caratteri"),
 })
 
-export async function loginWithMagicLink(formData: z.infer<typeof LoginSchema>) {
-  const validated = LoginSchema.safeParse(formData)
+export async function loginWithPassword(formData: z.infer<typeof AuthSchema>) {
+  const validated = AuthSchema.safeParse(formData)
   
   if (!validated.success) {
     return { error: validated.error.issues[0].message }
@@ -16,38 +17,41 @@ export async function loginWithMagicLink(formData: z.infer<typeof LoginSchema>) 
 
   const supabase = await createClient()
 
-  // In Next.js App Router non possiamo prendere window.location.origin
-  // Usiamo NEXT_PUBLIC_SITE_URL se presente, altrimenti diamo priorità a localhost
-  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'
-
-  const { error } = await supabase.auth.signInWithOtp({
+  const { error } = await supabase.auth.signInWithPassword({
     email: validated.data.email,
-    options: {
-      emailRedirectTo: `${siteUrl}/auth/callback?next=/admin`,
-      shouldCreateUser: true, // Permettiamo la creazione al primo accesso
-    },
+    password: validated.data.password,
   })
 
   if (error) {
-    if (error.message.includes('Signups not allowed')) {
-        return { error: "Utente non autorizzato o inesistente."}
-    }
+    return { error: "Credenziali non valide." }
+  }
+
+  return { success: true }
+}
+
+export async function registerWithPassword(formData: z.infer<typeof AuthSchema>) {
+  const validated = AuthSchema.safeParse(formData)
+  
+  if (!validated.success) {
+    return { error: validated.error.issues[0].message }
+  }
+
+  const supabase = await createClient()
+
+  const { error, data } = await supabase.auth.signUp({
+    email: validated.data.email,
+    password: validated.data.password,
+  })
+
+  if (error) {
     return { error: error.message }
   }
 
   return { success: true }
 }
 
-export async function verifyOtpAction(email: string, token: string) {
-    if (!email || !token) return { error: "Email e codice sono richiesti" }
-
+export async function logoutAction() {
     const supabase = await createClient()
-    const { error } = await supabase.auth.verifyOtp({
-        email,
-        token,
-        type: 'magiclink' // Supabase usa 'magiclink' come tipo anche per l'ispezine del token numerico
-    })
-
-    if (error) return { error: error.message }
+    await supabase.auth.signOut()
     return { success: true }
 }
