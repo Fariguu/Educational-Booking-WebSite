@@ -2,12 +2,14 @@
 
 import { useEffect, useState } from 'react'
 import { createBrowserClient } from '@supabase/ssr'
-import { Check, MailX, Loader2, X } from 'lucide-react'
+import { Check, MailX, Loader2, X, Save } from 'lucide-react'
 import { toast } from 'sonner'
+import { Label } from '@/components/ui/label'
 import { Card, CardContent, CardHeader, CardTitle, CardFooter } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
-import { approveApplication, rejectApplication } from '@/app/actions/roles'
+import { Textarea } from '@/components/ui/textarea'
+import { approveApplication, rejectApplication, updateApplicationNotes } from '@/app/actions/roles'
 
 type Application = {
   id: string
@@ -15,6 +17,7 @@ type Application = {
   bio: string
   subjects: string[]
   created_at: string
+  admin_notes?: string
 }
 
 export default function SuperadminDashboard({ 
@@ -23,6 +26,13 @@ export default function SuperadminDashboard({
     initialApplications: Application[] 
 }) {
   const [applications, setApplications] = useState<Application[]>(initialApplications)
+  const [localNotes, setLocalNotes] = useState<Record<string, string>>(() => {
+    const notes: Record<string, string> = {}
+    initialApplications.forEach(app => {
+      notes[app.id] = app.admin_notes || ''
+    })
+    return notes
+  })
   const [processingId, setProcessingId] = useState<string | null>(null)
   const [rejectingId, setRejectingId] = useState<string | null>(null)
   const [confirmRejectId, setConfirmRejectId] = useState<string | null>(null)
@@ -107,6 +117,23 @@ export default function SuperadminDashboard({
     }
   }
 
+  const handleSaveNotes = async (id: string) => {
+    const notes = localNotes[id]
+    setProcessingId(id)
+    try {
+      const res = await updateApplicationNotes(id, notes)
+      if (res.error) {
+        toast.error(res.error)
+      } else {
+        toast.success("Note aggiornate!")
+      }
+    } catch {
+      toast.error("Errore di rete.")
+    } finally {
+      setProcessingId(null)
+    }
+  }
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -137,10 +164,29 @@ export default function SuperadminDashboard({
                     ))}
                 </div>
               </CardHeader>
-              <CardContent className="flex-1">
-                <p className="text-sm text-muted-foreground line-clamp-4">
+              <CardContent className="flex-1 space-y-4">
+                <p className="text-sm text-muted-foreground line-clamp-3">
                     {app.bio}
                 </p>
+                <div className="pt-4 border-t space-y-2">
+                    <Label className="text-xs font-bold uppercase text-muted-foreground">Note Amministrative / Feedback</Label>
+                    <Textarea 
+                        value={localNotes[app.id]}
+                        onChange={(e) => setLocalNotes(prev => ({ ...prev, [app.id]: e.target.value }))}
+                        placeholder="Es: Mancano dettagli sulla laurea. Richiedere colloquio..."
+                        className="text-xs min-h-[80px] bg-muted/30"
+                    />
+                    <Button 
+                        size="sm" 
+                        variant="ghost" 
+                        className="w-full text-[10px] h-7 hover:bg-indigo-50 hover:text-indigo-600"
+                        onClick={() => handleSaveNotes(app.id)}
+                        disabled={processingId === app.id}
+                    >
+                        {processingId === app.id ? <Loader2 className="w-3 h-3 animate-spin mr-1" /> : <Save className="w-3 h-3 mr-1" />}
+                        Salva Note
+                    </Button>
+                </div>
               </CardContent>
               <CardFooter className="pt-3 border-t bg-muted/20 flex gap-2">
                 <Button 

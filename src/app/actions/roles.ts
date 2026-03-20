@@ -86,3 +86,14 @@ export async function rejectApplication(userId: string) {
 
   return { success: true }
 }
+
+export async function updateApplicationNotes(userId: string, notes: string) {
+  const adminClient = await createAdminClient()
+  const { error } = await adminClient
+    .from('professor_applications')
+    .update({ admin_notes: notes })
+    .eq('id', userId)
+
+  if (error) return { error: 'Errore durante l\'aggiornamento delle note.' }
+  return { success: true }
+}

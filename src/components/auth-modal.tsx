@@ -26,12 +26,17 @@ export default function AuthModal() {
   const searchParams = useSearchParams()
   const authMode = searchParams.get('auth') // 'login' | 'register' | 'forgot' | null
 
+  // Local state to close the modal immediately without waiting for URL change
+  const [isClosed, setIsClosed] = useState(false)
+
   const [isLogin, setIsLogin] = useState(true)
   const [isForgot, setIsForgot] = useState(false)
   const [isPending, setIsPending] = useState(false)
   const [errorMsg, setErrorMsg] = useState<string | null>(null)
 
+  // When authMode changes (e.g., a new ?auth=login link is clicked), re-open
   useEffect(() => {
+    if (authMode) setIsClosed(false)
     setIsForgot(authMode === 'forgot')
     if (authMode === 'register') setIsLogin(false)
     if (authMode === 'login') setIsLogin(true)
@@ -41,24 +46,27 @@ export default function AuthModal() {
     resolver: zodResolver(schema)
   })
 
+  const isOpen = !!authMode && !isClosed
+
   // Evita scroll body se aperto
   useEffect(() => {
-    if (authMode) {
+    if (isOpen) {
       document.body.style.overflow = 'hidden'
     } else {
       document.body.style.overflow = ''
     }
-  }, [authMode])
-
-  if (!authMode) return null
+  }, [isOpen])
 
   const closeMenu = () => {
     reset()
     setErrorMsg(null)
+    // Immediately hide via local state — no waiting for router
+    setIsClosed(true)
+    // Then clean the URL in background (replace = no history entry)
     const newParams = new URLSearchParams(searchParams.toString())
     newParams.delete('auth')
     const queryString = newParams.toString()
-    router.push(queryString ? `${pathname}?${queryString}` : pathname)
+    router.replace(queryString ? `${pathname}?${queryString}` : pathname, { scroll: false })
   }
 
   const toggleMode = () => {
@@ -129,7 +137,7 @@ export default function AuthModal() {
 
   return (
     <AnimatePresence>
-      {authMode && (
+      {isOpen && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 sm:p-0">
             {/* Backdrop */}
             <motion.div
@@ -152,8 +160,10 @@ export default function AuthModal() {
                 <div className="absolute top-0 left-0 w-full h-32 bg-gradient-to-br from-indigo-500 to-purple-600 opacity-10 pointer-events-none" />
 
                 <button 
+                  type="button"
                   onClick={closeMenu}
-                  className="absolute top-4 right-4 z-10 w-8 h-8 flex items-center justify-center rounded-full bg-muted/50 hover:bg-muted text-muted-foreground transition-colors"
+                  aria-label="Chiudi"
+                  className="absolute top-5 right-5 z-[50] w-9 h-9 flex items-center justify-center rounded-full bg-background/80 hover:bg-muted text-muted-foreground transition-all shadow-sm border border-border/50 backdrop-blur-md"
                 >
                     <X className="w-5 h-5" />
                 </button>

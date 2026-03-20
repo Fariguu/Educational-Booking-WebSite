@@ -37,6 +37,10 @@ export default async function ProfessorProfilePage({ params }: { params: Promise
     notFound()
   }
 
+  // Check if the currently logged-in user is the owner of this profile
+  const { data: { user } } = await supabase.auth.getUser()
+  const isOwner = !!user && user.id === professor.id
+
   return (
     <div className="min-h-screen bg-background flex flex-col">
       <PublicNavbar />
@@ -88,6 +92,14 @@ export default async function ProfessorProfilePage({ params }: { params: Promise
                       Contatta
                     </Button>
                   </Link>
+                  {isOwner && (
+                    <Link href="/profile">
+                      <Button size="lg" variant="secondary" className="gap-2 bg-amber-50 text-amber-700 border-amber-200 hover:bg-amber-100">
+                        <GraduationCap className="w-5 h-5" />
+                        Modifica Profilo
+                      </Button>
+                    </Link>
+                  )}
                 </div>
               </div>
             </div>

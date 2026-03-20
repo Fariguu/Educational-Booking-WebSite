@@ -1,7 +1,7 @@
 import { createClient } from '@/utils/supabase/server'
 import { redirect } from 'next/navigation'
 import Link from 'next/link'
-import { Home, LogOut, User as UserIcon } from 'lucide-react'
+import { Home, LogOut, User as UserIcon, ArrowLeft } from 'lucide-react'
 import LogoutButton from '@/components/logout-button'
 
 export default async function DashboardLayout({
@@ -35,9 +35,10 @@ export default async function DashboardLayout({
     <div className="min-h-screen bg-muted/10 flex flex-col">
       <header className="bg-background border-b px-6 py-4 flex items-center justify-between sticky top-0 z-50">
         <div className="flex items-center gap-6">
-          <Link href="/" className="flex items-center gap-2 font-bold text-xl text-indigo-600 hover:text-indigo-700 transition-colors">
+          <Link href="/" className="flex items-center gap-1.5 font-bold text-xl text-indigo-600 hover:text-indigo-700 transition-colors group">
+            <ArrowLeft className="w-4 h-4 transition-transform group-hover:-translate-x-1" />
             <Home className="w-6 h-6" />
-            <span className="hidden sm:inline">PrenotaLezioni</span>
+            <span className="hidden sm:inline">Torna al Sito</span>
           </Link>
           <nav className="hidden md:flex items-center gap-4 text-sm font-medium border-l pl-6">
             <Link href="/dashboard" className="text-foreground hover:text-indigo-600 transition-colors">
