@@ -64,3 +64,32 @@ export async function logoutAction() {
     await supabase.auth.signOut()
     return { success: true }
 }
+
+export async function resetPasswordAction(email: string) {
+  const supabase = await createClient()
+
+  // We construct the absolute URL for the redirect
+  const origin = process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'
+  
+  const { error } = await supabase.auth.resetPasswordForEmail(email, {
+    redirectTo: `${origin}/auth/callback?next=/update-password`,
+  })
+
+  if (error) {
+    return { error: error.message }
+  }
+
+  return { success: true }
+}
+
+export async function updatePasswordAction(newPassword: string) {
+  const supabase = await createClient()
+
+  const { error } = await supabase.auth.updateUser({ password: newPassword })
+
+  if (error) {
+    return { error: error.message }
+  }
+
+  return { success: true }
+}
