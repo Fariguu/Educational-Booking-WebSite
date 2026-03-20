@@ -97,3 +97,40 @@ export async function updateApplicationNotes(userId: string, notes: string) {
   if (error) return { error: 'Errore durante l\'aggiornamento delle note.' }
   return { success: true }
 }
+
+export async function sendApplicationMessage(applicationId: string, content: string) {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return { error: "Non autorizzato." }
+
+  const { error } = await supabase
+    .from('application_messages')
+    .insert({
+      application_id: applicationId,
+      sender_id: user.id,
+      content: content.trim()
+    })
+
+  if (error) return { error: "Errore nell'invio del messaggio." }
+  return { success: true }
+}
+
+export async function getApplicationMessages(applicationId: string, limit: number = 5) {
+  const supabase = await createClient()
+  
+  const { data, error } = await supabase
+    .from('application_messages')
+    .select(`
+      id,
+      content,
+      created_at,
+      sender_id,
+      profiles:sender_id (role, first_name, last_name)
+    `)
+    .eq('application_id', applicationId)
+    .order('created_at', { ascending: false })
+    .limit(limit)
+
+  if (error) return { error: "Errore nel caricamento dei messaggi." }
+  return { data: data.reverse() } // Reverse to show chronological order in UI
+}

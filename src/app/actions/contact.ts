@@ -89,3 +89,19 @@ export async function sendContactMessage(formData: z.infer<typeof ContactSchema>
 
   return { success: true }
 }
+
+export async function getContactMessages(professorId?: string) {
+  const supabase = await createAdminClient()
+  let query = supabase.from('contacts').select('*').order('created_at', { ascending: false })
+  
+  if (professorId) {
+    query = query.eq('professor_id', professorId)
+  } else {
+    query = query.is('professor_id', null)
+  }
+
+  const { data, error } = await query
+
+  if (error) return { error: "Errore nel recupero dei messaggi." }
+  return { data }
+}

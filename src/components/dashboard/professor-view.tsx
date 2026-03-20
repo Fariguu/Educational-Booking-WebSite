@@ -3,16 +3,19 @@
 import { AdminTabs } from '@/components/admin/admin-tabs'
 import { CreateSlotDialog } from '@/components/admin/create-slot-dialog'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Users, Mail, Clock } from 'lucide-react'
+import { Users, Mail, Clock, Send } from 'lucide-react'
+import { Button, buttonVariants } from '@/components/ui/button'
 
 export default function ProfessorDashboardView({ 
   user, 
   lessons, 
-  studentsHours
+  studentsHours,
+  contactMessages = []
 }: { 
   user: any
   lessons: any[]
   studentsHours: any[]
+  contactMessages?: any[]
 }) {
   return (
     <div className="space-y-8">
@@ -32,6 +35,46 @@ export default function ProfessorDashboardView({
         </div>
 
         <div className="space-y-6">
+          <Card className="border-indigo-100 shadow-sm overflow-hidden">
+            <CardHeader className="pb-3 border-b bg-indigo-50/30">
+              <CardTitle className="text-sm font-bold flex items-center gap-2 text-indigo-900">
+                <Mail className="w-4 h-4" />
+                Messaggi Ricevuti ({contactMessages.length})
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="p-0">
+              {contactMessages.length === 0 ? (
+                <div className="p-8 text-center text-muted-foreground">
+                  <Mail className="w-8 h-8 mx-auto mb-2 opacity-20" />
+                  <p className="text-xs">Nessun messaggio ricevuto dai visitatori.</p>
+                </div>
+              ) : (
+                <div className="divide-y max-h-[400px] overflow-y-auto scrollbar-thin">
+                  {contactMessages.map((msg) => (
+                    <div key={msg.id} className="p-4 hover:bg-muted/30 transition-colors">
+                      <div className="flex justify-between items-start mb-2">
+                        <div className="flex flex-col">
+                          <span className="text-xs font-bold text-indigo-950 uppercase tracking-tight">{msg.name}</span>
+                          <span className="text-[10px] text-muted-foreground">{new Date(msg.created_at).toLocaleDateString()}</span>
+                        </div>
+                        <a 
+                          href={`mailto:${msg.email}`} 
+                          title="Rispondi via email"
+                          className={buttonVariants({ variant: 'ghost', size: 'icon' }) + " h-6 w-6 text-indigo-600"}
+                        >
+                          <Mail className="w-3.5 h-3.5" />
+                        </a>
+                      </div>
+                      <p className="text-xs text-muted-foreground line-clamp-3 leading-relaxed bg-muted/20 p-2 rounded italic">
+                        "{msg.message}"
+                      </p>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+
           <Card>
             <CardHeader className="pb-3 border-b mb-3">
               <CardTitle className="text-lg flex items-center gap-2">

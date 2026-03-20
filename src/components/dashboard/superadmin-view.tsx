@@ -14,11 +14,13 @@ type Stats = {
 export default function SuperAdminDashboardView({ 
   user, 
   stats,
-  initialApplications 
+  initialApplications,
+  contactMessages
 }: { 
   user: any
   stats: Stats
   initialApplications: any[]
+  contactMessages: any[]
 }) {
   return (
     <div className="space-y-8">
@@ -62,7 +64,10 @@ export default function SuperAdminDashboardView({
       </div>
 
       <div className="pt-4">
-        <SuperadminDashboard initialApplications={initialApplications} />
+        <SuperadminDashboard 
+          initialApplications={initialApplications} 
+          contactMessages={contactMessages}
+        />
       </div>
     </div>
   )
