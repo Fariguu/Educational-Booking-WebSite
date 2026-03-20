@@ -7,21 +7,23 @@ L'obiettivo principale è massimizzare le performance, minimizzare i costi (sfru
 ## 2. Funzionalità
 
 ### Per gli Studenti:
-* **Visualizzazione Calendario:** Interfaccia pubblica chiara e intuitiva per vedere immediatamente i giorni e le fasce orarie messe a disposizione.
+* **Visualizzazione Calendario:** Interfaccia pubblica chiara e intuitiva per vedere immediatamente i giorni e le fasce orarie messe a disposizione (inclusi i "Mega-Slot" frazionabili a piacimento).
 * **Prenotazione Rapida:** Modulo di prenotazione snello che richiede solo identificazione base (nome, email) e opzionalmente delle note aggiuntive. Nessuna registrazione necessaria.
+* **Sistema di Reschedule (Magic Link):** Tramite un link segreto ricevuto via email, lo studente può accedere alla pagina di gestione della sua prenotazione (`/gestisci/[id]`) e richiedere in autonomia uno spostamento orario al professore.
 * **Modulo di Contatto:** Form dedicato per richiedere informazioni pre-prenotazione, con accettazione esplicita della privacy policy.
-* **Protezione Anti-Spam:** Integrazione con il widget Cloudflare Turnstile per garantire che i form vengano compilati solo da esseri umani reali, fermando bot malintenzionati.
-* **Notifiche Email:** Ricezione di email automatiche transazionali quando la richiesta viene inviata al sistema e, successivamente, quando viene confermata o rifiutata dall'insegnante.
+* **Protezione Anti-Spam:** Integrazione con il widget Cloudflare Turnstile per garantire che i form vengano compilati solo da esseri umani reali.
+* **Notifiche Email:** Ricezione di email automatiche transazionali ad ogni cambio di stato (inviata, confermata, rifiutata, orario modificato dall'insegnante).
 
 ### Per l'Amministratore (Professore):
-* **Accesso Sicuro Passwordless:** Login protetto senza password, tramite un sistema OTP (codice numerico a 6 cifre) generato da Supabase Auth e inviato in tempo reale via email.
-* **Dashboard Completa:** Un pannello di controllo riservato e protetto da middleware Next.js per gestire l'intero workflow:
-  * *Richieste in attesa:* Visualizzazione rapida di chi ha prenotato, con opzione in un click per confermare o rifiutare le lezioni.
+* **Accesso Sicuro Passwordless:** Login protetto tramite un sistema OTP generato da Supabase Auth e inviato via email.
+* **Dashboard Completa (CRUD Avanzato):** Un pannello di controllo per gestire l'intero workflow:
+  * *Richieste in attesa:* Visualizzazione rapida di chi ha prenotato, con opzione per confermare o rifiutare.
   * *Lezioni confermate:* Riepilogo delle lezioni future già approvate.
   * *Gestione Disponibilità:* Possibilità di inserire singoli orari liberi nel calendario.
-* **Generazione Slot in Serie (Ricorrenze):** Creazione rapida di disponibilità ricorrenti (es. "Tutti i giovedì alle 16:00 per 4 settimane") con calcolo automatico coerente al variare dei fusi orari (transizioni Ora Legale/Ora Solare salvaguardate).
-* **Integrazione Dinamica Google Calendar:** Al momento della conferma di una lezione, il sistema redige un URL custom per Google Calendar preconfezionato con tutti i dettagli della lezione (studente, orario, note), pronto per un "Salva" ad un click.
-* **Email Automatizzate:** Invio di risposte (conferma con esito positivo o scuse via rifiuto) automatizzate allo studente in base al routing e all'azione effettuata in dashboard.
+  * *Modifica e Cancellazione (CRUD):* Capacità di alterare l'orario di lezioni già prenotate e di annullare impegni (con scelta se ripristinare o distruggere il blocco temporale). Include badge visivi per avvisare di richieste di "Spostamento" da parte degli studenti.
+* **Generazione Slot in Serie:** Creazione di disponibilità ricorrenti.
+* **Integrazione Dinamica Google Calendar:** In fase di conferma o "salvataggio" di una modifica oraria, generazione dinamica di link Google Calendar.
+* **Email Automatizzate:** Invio di note transazionali automatiche via piattaforma Resend.
 
 ## 3. Specifiche Tecniche
 
@@ -43,9 +45,9 @@ L'obiettivo principale è massimizzare le performance, minimizzare i costi (sfru
 
 ### Il layer Logico `src/app/actions/` (Next.js Server Actions)
 Moduli cruciali di elaborazione dati e chiamate API interne che sfruttano l'isolamento del backend integrato in Next.
-* **`auth.ts`**: Gestisce l'ingresso. Genera magic link (`signInWithOtp`) o valuta token manuali OTP numerici (`verifyOtp`).
-* **`booking.ts`**: Modulo che convalida lato server il form student, incrocia la risposta Turnstile verso i server Cloudflare e gestisce l'inserzione a db commutandolo a stato pre-impegnato `pending`.
-* **`admin.ts`**: Controlli logici di amministrazione garantiti. Include script bulk (`insert` massivi con calcolo scalare ciclico per le ricorrenze), routine di reiezione e procedure per le validazioni `confirmed` con sparo e-mail concomitante tramite Resend client e composizione URL di rinvio al Google Calendar prof.
+* **`auth.ts`**: Gestisce l'ingresso. Genera magic link o valuta token manuali OTP numerici (`verifyOtp`).
+* **`booking.ts`**: Modulo che convalida lato server il form student, gestisce l'inserzione tramite RPC per il partizionamento dinamico in "Mega-Slots" (evitando i double-booking in concorrenza) e funge da recettore per `requestReschedule` dal lato studente inviando notifiche al prof.
+* **`admin.ts`**: Controlli logici di amministrazione garantiti. Include script bulk per generazione, routine di accettazione (`confirmLesson`), aggiornamento (`updateLessonTime`) e cancellazione controllata (`cancelLessonWithChoice`), supportando l'invio asincrono di Email Resend e link aggiuntivi per Google Calendar.
 
 ### Le componenti `src/components/`
 Scomposizione delle interfacce. L'intricamento principale risiede in `components/admin/`:

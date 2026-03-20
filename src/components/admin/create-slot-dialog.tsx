@@ -2,8 +2,8 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { Calendar as CalendarIcon, Loader2, PlusCircle, Repeat } from 'lucide-react'
-import { addMinutes, format } from 'date-fns'
+import { Loader2, PlusCircle, Repeat } from 'lucide-react'
+import { addMinutes } from 'date-fns'
 
 import { Button } from '@/components/ui/button'
 import {
@@ -79,7 +79,7 @@ export function CreateSlotDialog() {
         setIsRecurring(false)
         setEndDate('')
       }
-    } catch (err) {
+    } catch (_err) {
       setError("Si è verificato un errore inaspettato.")
     } finally {
       setIsPending(false)
@@ -96,7 +96,7 @@ export function CreateSlotDialog() {
         <DialogHeader>
           <DialogTitle>Crea nuovo Slot orario</DialogTitle>
           <DialogDescription>
-            Definisci la data, l'ora di inizio e la durata della lezione. Verrà reso visibile immediatamente agli studenti.
+            Definisci la data, l&apos;ora di inizio e la durata della lezione. Verrà reso visibile immediatamente agli studenti.
           </DialogDescription>
         </DialogHeader>
         

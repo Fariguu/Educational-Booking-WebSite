@@ -1,6 +1,7 @@
 'use server'
 
 import { createClient } from '@/utils/supabase/server'
+import { requireRole } from '@/utils/auth-check'
 import { revalidatePath } from 'next/cache'
 import { z } from 'zod'
 
@@ -15,10 +16,15 @@ const CreateSlotSchema = z.object({
 import { addDays } from 'date-fns'
 
 export async function createSlot(formData: z.infer<typeof CreateSlotSchema>) {
-  const supabase = await createClient()
+  try {
+    await requireRole(['professor', 'admin', 'superadmin'])
+  } catch (e: any) {
+    return { error: e.message || "Non autorizzato" }
+  }
 
+  const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
-  if (!user) return { error: "Non autorizzato" }
+  if (!user) return { error: "Utente non trovato" }
 
   const validated = CreateSlotSchema.safeParse(formData)
   if (!validated.success) return { error: "Dati non validi" }
@@ -41,7 +47,8 @@ export async function createSlot(formData: z.infer<typeof CreateSlotSchema>) {
         start_time: currentStart.toISOString(),
         end_time: currentEnd.toISOString(), // ISO renderà l'ora UTC corretta basata sulla data locale
         is_available: true,
-        status: 'available'
+        status: 'available',
+        professor_id: user.id
       })
 
       // Prossima settimana (+ 7 giorni usando date-fns per preservare l'ora locale attraverso DST)
@@ -53,7 +60,8 @@ export async function createSlot(formData: z.infer<typeof CreateSlotSchema>) {
       start_time: start_time,
       end_time: end_time,
       is_available: true,
-      status: 'available'
+      status: 'available',
+      professor_id: user.id
     })
   }
 
@@ -69,10 +77,15 @@ export async function createSlot(formData: z.infer<typeof CreateSlotSchema>) {
 }
 
 export async function removeAvailableSlot(slotId: string) {
-  const supabase = await createClient()
+  try {
+    await requireRole(['professor', 'admin', 'superadmin'])
+  } catch (e: any) {
+    return { error: e.message || "Non autorizzato" }
+  }
 
+  const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
-  if (!user) return { error: "Non autorizzato" }
+  if (!user) return { error: "Utente non trovato" }
 
   // Può eliminare solo se è effettivamente 'available' (sicurezza extra per non cancellare prenotazioni in corso)
   const { error } = await supabase
@@ -95,9 +108,15 @@ const resend = process.env.RESEND_API_KEY && process.env.RESEND_API_KEY !== 're_
   : null;
 
 export async function confirmLesson(lessonId: string) {
+  try {
+    await requireRole(['professor', 'admin', 'superadmin'])
+  } catch (e: any) {
+    return { error: e.message || "Non autorizzato" }
+  }
+
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
-  if (!user) return { error: "Non autorizzato" }
+  if (!user) return { error: "Utente non trovato" }
 
   const { data: lesson, error: fetchErr } = await supabase
     .from('lessons')
@@ -125,12 +144,21 @@ export async function confirmLesson(lessonId: string) {
   // Notify via Resend
   if (resend && lesson.student_contact) {
     const fromEmail = process.env.RESEND_FROM_EMAIL || 'Prenotazioni <onboarding@resend.dev>'
+    const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'
+    const manageUrl = `${siteUrl}/gestisci/${lessonId}`
+    
     try {
       await resend.emails.send({
         from: fromEmail,
         to: lesson.student_contact,
         subject: 'Lezione Confermata!',
-        html: `<p>Ciao <strong>${lesson.student_name}</strong>,</p><p>Ottime notizie! La tua lezione del ${startDate.toLocaleDateString('it-IT')} è stata ufficialmente confermata!</p>`,
+        html: `<p>Ciao <strong>${lesson.student_name}</strong>,</p>
+               <p>Ottime notizie! La tua lezione del ${startDate.toLocaleDateString('it-IT')} è stata ufficialmente confermata!</p>
+               <p><a href="${gcalUrl}">Aggiungi a Google Calendar</a></p>
+               <hr />
+               <p>Hai un imprevisto e vuoi richiedere di spostare la lezione?</p>
+               <p><a href="${manageUrl}" style="background-color: #9333ea; color: white; padding: 10px 18px; text-decoration: none; border-radius: 6px; display: inline-block;">Gestisci Prenotazione</a></p>
+               <p><small>(Link privato, non inoltrare a nessuno)</small></p>`,
       })
     } catch (e) { console.error("Errore invio email conferma:", e) }
   }
@@ -141,9 +169,15 @@ export async function confirmLesson(lessonId: string) {
 }
 
 export async function rejectLesson(lessonId: string) {
+  try {
+    await requireRole(['professor', 'admin', 'superadmin'])
+  } catch (e: any) {
+    return { error: e.message || "Non autorizzato" }
+  }
+
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
-  if (!user) return { error: "Non autorizzato" }
+  if (!user) return { error: "Utente non trovato" }
 
   const { data: lesson } = await supabase.from('lessons').select('student_contact, student_name').eq('id', lessonId).single()
 
@@ -171,6 +205,131 @@ export async function rejectLesson(lessonId: string) {
         html: `<p>Ciao <strong>${lesson.student_name}</strong>,</p><p>Purtroppo non è stato possibile confermare l'orario richiesto. Riprova sul sito con una nuova disponibilità!</p>`,
       })
     } catch (e) { console.error("Errore invio email rifiuto:", e) }
+  }
+
+  revalidatePath('/admin')
+  revalidatePath('/')
+  return { success: true }
+}
+
+export async function updateLessonTime(lessonId: string, newStartTime: string, newEndTime: string) {
+  try {
+    await requireRole(['professor', 'admin', 'superadmin'])
+  } catch (e: any) {
+    return { error: e.message || "Non autorizzato" }
+  }
+
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return { error: "Utente non trovato" }
+
+  const { data: lesson, error: fetchErr } = await supabase
+    .from('lessons')
+    .select('*')
+    .eq('id', lessonId)
+    .single()
+
+  if (fetchErr || !lesson) return { error: "Lezione non trovata" }
+
+  const { error } = await supabase
+    .from('lessons')
+    .update({ 
+      start_time: newStartTime,
+      end_time: newEndTime,
+      reschedule_requested: false,
+      reschedule_notes: null
+    })
+    .eq('id', lessonId)
+
+  if (error) return { error: error.message }
+
+  // Genera link Google Calendar aggiornato
+  const startDate = new Date(newStartTime)
+  const endDate = new Date(newEndTime)
+  const formatS = startDate.toISOString().replace(/[-:]/g, '').split('.')[0] + 'Z'
+  const formatE = endDate.toISOString().replace(/[-:]/g, '').split('.')[0] + 'Z'
+
+  const gcalUrl = `https://calendar.google.com/calendar/render?action=TEMPLATE&text=Lezione+Aggiornata+-+${encodeURIComponent(lesson.student_name || 'Studente')}&dates=${formatS}/${formatE}&details=Contatto:+${encodeURIComponent(lesson.student_contact || '')}`
+
+  // Notify student via Resend
+  if (resend && lesson.student_contact) {
+    const fromEmail = process.env.RESEND_FROM_EMAIL || 'Prenotazioni <onboarding@resend.dev>'
+    try {
+      await resend.emails.send({
+        from: fromEmail,
+        to: lesson.student_contact,
+        subject: 'Aggiornamento Orario Lezione',
+        html: `<p>Ciao <strong>${lesson.student_name}</strong>,</p>
+               <p>Il professore ha modificato l'orario della tua lezione.</p>
+               <p>Il nuovo orario confermato è: <br/><strong>Inizio:</strong> ${startDate.toLocaleString('it-IT')}<br/><strong>Fine:</strong> ${endDate.toLocaleString('it-IT')}</p>
+               <p><a href="${gcalUrl}">Aggiungi al tuo Google Calendar</a></p>`,
+      })
+    } catch (e) { console.error("Errore invio email aggiornamento:", e) }
+  }
+
+  revalidatePath('/admin')
+  revalidatePath('/')
+  return { success: true, gcalUrl }
+}
+
+export async function cancelLessonWithChoice(lessonId: string, keepAvailable: boolean) {
+  try {
+    await requireRole(['professor', 'admin', 'superadmin'])
+  } catch (e: any) {
+    return { error: e.message || "Non autorizzato" }
+  }
+
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return { error: "Utente non trovato" }
+
+  const { data: lesson, error: fetchErr } = await supabase
+    .from('lessons')
+    .select('student_contact, student_name')
+    .eq('id', lessonId)
+    .single()
+
+  if (fetchErr) return { error: "Lezione non trovata" }
+
+  if (keepAvailable) {
+    // Reset status to available, wipe student data
+    const { error } = await supabase
+      .from('lessons')
+      .update({
+        status: 'available',
+        is_available: true,
+        student_name: null,
+        student_contact: null,
+        notes: null,
+        reschedule_requested: false,
+        reschedule_notes: null
+      })
+      .eq('id', lessonId)
+    
+    if (error) return { error: error.message }
+  } else {
+    // Completely hard delete the row
+    const { error } = await supabase
+      .from('lessons')
+      .delete()
+      .eq('id', lessonId)
+
+    if (error) return { error: error.message }
+  }
+
+  // Notify student of cancellation
+  if (resend && lesson?.student_contact) {
+    const fromEmail = process.env.RESEND_FROM_EMAIL || 'Prenotazioni <onboarding@resend.dev>'
+    try {
+      await resend.emails.send({
+        from: fromEmail,
+        to: lesson.student_contact,
+        subject: 'Lezione Annullata',
+        html: `<p>Ciao <strong>${lesson.student_name}</strong>,</p>
+               <p>Purtroppo la tua lezione programmata è stata annullata dal professore per un imprevisto. Ci scusiamo per il disagio.</p>
+               <p>Puoi visitare nuovamente la piattaforma per cercare e prenotare un nuovo orario disponibile.</p>`,
+      })
+    } catch (e) { console.error("Errore invio email annullamento:", e) }
   }
 
   revalidatePath('/admin')

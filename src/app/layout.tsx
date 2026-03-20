@@ -4,6 +4,8 @@ import "./globals.css";
 import { Analytics } from "@vercel/analytics/next";
 import { SpeedInsights } from "@vercel/speed-insights/next";
 import { Toaster } from "@/components/ui/sonner";
+import { Suspense } from "react";
+import AuthModal from "@/components/auth-modal";
 
 const interFont = Inter({
   variable: "--font-sans",
@@ -31,6 +33,9 @@ export default function RootLayout({
       >
         {children}
         <Toaster position="bottom-right" richColors closeButton />
+        <Suspense fallback={null}>
+          <AuthModal />
+        </Suspense>
         <Analytics />
         <SpeedInsights />
       </body>
