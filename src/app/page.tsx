@@ -4,6 +4,7 @@ import { Star, Mail, BookOpen } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import PublicNavbar from "@/components/public-navbar";
 import SearchInput from "@/components/search-input";
+import { Suspense } from "react";
 
 export const metadata: Metadata = {
   title: "Prenotazione Lezioni Private",
@@ -56,7 +57,9 @@ export default function HomePage() {
             <strong className="text-foreground">Senza registrazione</strong>.
           </p>
 
-          <SearchInput />
+          <Suspense fallback={<div className="h-12 w-full max-w-lg mx-auto bg-muted animate-pulse rounded-md" />}>
+            <SearchInput />
+          </Suspense>
         </div>
       </section>
 

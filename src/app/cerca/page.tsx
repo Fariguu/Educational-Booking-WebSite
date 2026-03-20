@@ -5,6 +5,7 @@ import { Badge } from '@/components/ui/badge'
 import PublicNavbar from '@/components/public-navbar'
 import { createClient } from '@/utils/supabase/server'
 import SearchInput from '@/components/search-input'
+import { Suspense } from 'react'
 
 export const metadata = {
   title: 'Risultati di Ricerca Docenti',
@@ -36,7 +37,9 @@ export default async function SearchResultsPage({ searchParams }: { searchParams
         <section className="bg-indigo-50/40 border-b py-10">
           <div className="container mx-auto px-4 max-w-3xl text-center">
             <h1 className="text-2xl md:text-4xl font-extrabold tracking-tight mb-6">Cerca Docenti e Materie</h1>
-            <SearchInput />
+            <Suspense fallback={<div className="h-12 w-full max-w-lg mx-auto bg-muted animate-pulse rounded-md" />}>
+              <SearchInput />
+            </Suspense>
           </div>
         </section>
 
