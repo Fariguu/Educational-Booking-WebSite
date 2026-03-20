@@ -1,6 +1,7 @@
 'use server'
 
 import { createClient, createAdminClient } from '@/utils/supabase/server'
+import { requireRole } from '@/utils/auth-check'
 import { Resend } from 'resend'
 import { z } from 'zod'
 
@@ -15,10 +16,16 @@ const ApplicationSchema = z.object({
 })
 
 export async function applyForProfessor(formData: z.infer<typeof ApplicationSchema>) {
-  const supabase = await createClient()
+  // Solo utenti base o studenti possono candidarsi
+  try {
+    await requireRole(['user', 'student' as any])
+  } catch (e: any) {
+    return { error: e.message || "Non autorizzato" }
+  }
 
+  const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
-  if (!user) return { error: "Non sei autenticato. Fai l'accesso prima." }
+  if (!user) return { error: "Utente non trovato" }
 
   const validated = ApplicationSchema.safeParse(formData)
   if (!validated.success) return { error: validated.error.issues[0].message }
@@ -99,6 +106,12 @@ export async function applyForProfessor(formData: z.infer<typeof ApplicationSche
 }
 
 export async function approveApplication(userId: string) {
+  try {
+    await requireRole(['admin'])
+  } catch (e: any) {
+    return { error: e.message || "Non autorizzato" }
+  }
+
   const adminClient = await createAdminClient()
   const { data, error } = await adminClient.rpc('approve_professor_application', { p_user_id: userId })
   
@@ -109,6 +122,12 @@ export async function approveApplication(userId: string) {
 }
 
 export async function rejectApplication(userId: string) {
+  try {
+    await requireRole(['admin'])
+  } catch (e: any) {
+    return { error: e.message || "Non autorizzato" }
+  }
+
   const adminClient = await createAdminClient()
 
   // 1. Elimina la candidatura
@@ -131,6 +150,12 @@ export async function rejectApplication(userId: string) {
 }
 
 export async function updateApplicationNotes(userId: string, notes: string) {
+  try {
+    await requireRole(['admin'])
+  } catch (e: any) {
+    return { error: e.message || "Non autorizzato" }
+  }
+
   const adminClient = await createAdminClient()
   const { error } = await adminClient
     .from('professor_applications')
