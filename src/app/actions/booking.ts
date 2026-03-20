@@ -67,6 +67,16 @@ export async function bookLesson(formData: z.infer<typeof BookingSchema>) {
     // 3. Update Supabase tramite RPC per partizionamento atomico (Mega-Slot)
     const supabase = await createAdminClient()
     
+    let finalStudentId = studentId || null
+    if (finalStudentId) {
+      // Verifica se lo studente esiste nella tabella "students" per evitare errori FK
+      // Nota: in questa versione del DB, lessons.student_id punta a students.id, non a profiles.id
+      const { data: studentRecord } = await supabase.from('students').select('id').eq('id', finalStudentId).single()
+      if (!studentRecord) {
+        finalStudentId = null
+      }
+    }
+
     const { data: result, error: rpcError } = await supabase.rpc('split_and_book_slot', {
         p_slot_id: slotId,
         p_req_start: requestedStartTime,
@@ -74,7 +84,7 @@ export async function bookLesson(formData: z.infer<typeof BookingSchema>) {
         p_name: studentName,
         p_email: studentContact,
         p_notes: notes || null,
-        p_student_id: studentId || null
+        p_student_id: finalStudentId
     })
 
     if (rpcError) {

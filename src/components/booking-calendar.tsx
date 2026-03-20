@@ -109,10 +109,16 @@ export default function BookingCalendar({ professorId }: { professorId: string }
     const supabase = createClient();
     supabase.auth.getUser().then(({ data: { user } }) => {
       if (user) {
-        setStudentId(user.id);
-        // Try to get full name from profile
+        // Verifica se l'utente esiste nella tabella "students" (richiesto dai vincoli DB per prenotare)
+        supabase.from('students').select('id').eq('id', user.id).single().then(({ data: studentData }) => {
+          if (studentData) {
+            setStudentId(studentData.id);
+          }
+        });
+
+        // Recupera i dati dal profilo per pre-compilare il nome
         supabase.from('profiles').select('first_name, last_name').eq('id', user.id).single().then(({ data }) => {
-          if (data?.first_name || data?.last_name) {
+          if (data && (data.first_name || data.last_name)) {
             setValue('studentName', `${data.first_name ?? ''} ${data.last_name ?? ''}`.trim());
           }
         });
