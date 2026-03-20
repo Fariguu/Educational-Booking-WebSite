@@ -59,31 +59,31 @@ export default async function SearchResultsPage({ searchParams }: { searchParams
             <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
               {professors.map((prof: any) => (
                 <div key={prof.id} className="bg-card rounded-2xl p-6 border shadow-sm hover:shadow-md transition-shadow flex flex-col">
-                  <div className="flex items-start gap-4 mb-4">
-                    <div className="w-14 h-14 rounded-full bg-indigo-100 flex items-center justify-center text-indigo-700 font-bold text-xl flex-shrink-0">
+                  <Link href={`/professori/${prof.slug}`} className="flex items-start gap-4 mb-4 group cursor-pointer">
+                    <div className="w-14 h-14 rounded-full bg-indigo-100 flex items-center justify-center text-indigo-700 font-bold text-xl flex-shrink-0 group-hover:bg-indigo-600 group-hover:text-white transition-colors">
                       {prof.name?.charAt(0).toUpperCase() || '?'}
                     </div>
                     <div>
-                      <h3 className="font-semibold inset-0 text-lg">{prof.name}</h3>
+                      <h3 className="font-semibold inset-0 text-lg group-hover:text-indigo-600 transition-colors">{prof.name}</h3>
                       <div className="flex flex-wrap gap-1 mt-1">
                         {prof.subjects?.map((sub: string) => (
                            <Badge key={sub} variant="secondary" className="text-[10px] px-1.5 py-0">{sub}</Badge>
                         ))}
                       </div>
                     </div>
-                  </div>
+                  </Link>
                   
                   <p className="text-sm text-muted-foreground line-clamp-3 mb-6 flex-1">
                     {prof.bio || "Insegnante qualificato e pronto ad aiutarti a raggiungere i tuoi obiettivi."}
                   </p>
 
                   <div className="flex gap-2 mt-auto">
-                      <Link href={`/${prof.id}/prenota`} className="flex-1">
+                      <Link href={`/professori/${prof.slug}/prenota`} className="flex-1">
                         <Button className="w-full bg-indigo-600 hover:bg-indigo-700 text-white shadow-sm">
                            Prenota
                         </Button>
                       </Link>
-                      <Link href={`/${prof.id}/contatti`} className="flex-1">
+                      <Link href={`/professori/${prof.slug}/contatti`} className="flex-1">
                         <Button variant="outline" className="w-full">
                            Contatta
                         </Button>

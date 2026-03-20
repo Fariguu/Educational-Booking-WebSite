@@ -72,7 +72,7 @@ export default function StudentDashboardView({
                   <p className="text-sm text-muted-foreground line-clamp-2 mb-6">
                     {p.bio}
                   </p>
-                  <Link href={`/${p.id}/prenota`}>
+                  <Link href={`/professori/${p.slug}/prenota`}>
                     <Button variant="outline" className="w-full gap-2 text-indigo-600 border-indigo-200 hover:bg-indigo-50">
                       Prenota di nuovo
                       <ArrowRight className="w-3.5 h-3.5" />
