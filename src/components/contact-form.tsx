@@ -26,7 +26,7 @@ const formSchema = z.object({
 })
 type FormValues = z.infer<typeof formSchema>
 
-export default function ContactForm() {
+export default function ContactForm({ professorId }: { professorId: string }) {
   const [turnstileToken, setTurnstileToken] = useState('')
   const [turnstileKey, setTurnstileKey] = useState(0)
   const [isPending, setIsPending] = useState(false)
@@ -44,7 +44,7 @@ export default function ContactForm() {
     setIsPending(true)
     setError(null)
 
-    const result = await sendContactMessage({ ...values, turnstileToken })
+    const result = await sendContactMessage({ ...values, turnstileToken, professorId })
 
     if (result.error) {
       setError(result.error)
