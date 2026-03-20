@@ -3,9 +3,8 @@ import { redirect } from 'next/navigation'
 import SuperAdminDashboardView from '@/components/dashboard/superadmin-view'
 import AdminDashboardView from '@/components/dashboard/admin-view'
 import ProfessorDashboardView from '@/components/dashboard/professor-view'
-import { Loader2 } from 'lucide-react'
+import { Loader2, Mail } from 'lucide-react'
 import StudentDashboardView from '@/components/dashboard/student-view'
-import { ApplicationChat } from '@/components/application-chat'
 import { getContactMessages } from '@/app/actions/contact'
 
 export default async function DashboardPage() {
@@ -100,34 +99,23 @@ export default async function DashboardPage() {
       )
     }
     case 'pending_professor': {
-      const { data: application } = await supabase
-        .from('professor_applications')
-        .select('admin_notes')
-        .eq('id', user.id)
-        .single()
-        
       return (
         <div className="flex flex-col items-center justify-center min-h-[50vh] text-center p-6 bg-indigo-50/50 rounded-3xl border border-indigo-100 shadow-sm max-w-2xl mx-auto">
           <div className="w-16 h-16 bg-indigo-100 text-indigo-600 rounded-full flex items-center justify-center mb-6">
             <Loader2 className="w-8 h-8 animate-spin" />
           </div>
           <h2 className="text-2xl font-bold text-indigo-900 mb-2">Candidatura in Revisione</h2>
-          <p className="text-muted-foreground mb-8">
+          <p className="text-muted-foreground mb-6">
             Stiamo esaminando il tuo profilo. Riceverai una risposta al più presto.
           </p>
-
-          {user?.id && (
-            <div className="bg-white p-6 rounded-2xl border border-indigo-200 text-left shadow-sm w-full">
-                <div className="flex items-center gap-2 mb-4">
-                  <span className="p-1 px-2 bg-indigo-600 text-white text-[10px] font-bold uppercase rounded">Conversazione con Admin</span>
-                </div>
-                <ApplicationChat 
-                  applicationId={user.id} 
-                  currentUserId={user.id} 
-                  userRole="pending_professor" 
-                />
+          <div className="bg-white p-5 rounded-2xl border border-indigo-200 shadow-sm w-full flex items-center gap-3">
+            <div className="w-9 h-9 bg-indigo-100 text-indigo-600 rounded-full flex items-center justify-center shrink-0">
+              <Mail className="w-4 h-4" />
             </div>
-          )}
+            <p className="text-sm text-indigo-800 text-left">
+              L'amministrazione ti contatterà direttamente via email per comunicarti l'esito della candidatura o per richiedere eventuali informazioni aggiuntive.
+            </p>
+          </div>
         </div>
       )
     }

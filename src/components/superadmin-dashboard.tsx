@@ -2,13 +2,12 @@
 
 import { useEffect, useState } from 'react'
 import { createBrowserClient } from '@supabase/ssr'
-import { Check, MailX, Loader2, X, Save, Send } from 'lucide-react'
+import { Check, MailX, Loader2, X, Mail } from 'lucide-react'
 import { toast } from 'sonner'
 import { Label } from '@/components/ui/label'
 import { Card, CardContent, CardHeader, CardTitle, CardFooter } from '@/components/ui/card'
 import { Button, buttonVariants } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
-import { ApplicationChat } from '@/components/application-chat'
 import { approveApplication, rejectApplication } from '@/app/actions/roles'
 
 type Application = {
@@ -18,6 +17,7 @@ type Application = {
   subjects: string[]
   created_at: string
   admin_notes?: string
+  email?: string // email del candidato (salvata in professor_applications)
 }
 
 type ContactMessage = {
@@ -37,8 +37,6 @@ export default function SuperadminDashboard({
 }) {
   const [activeTab, setActiveTab] = useState<'applications' | 'contacts'>('applications')
   const [applications, setApplications] = useState<Application[]>(initialApplications)
-  const [currentUserId, setCurrentUserId] = useState<string | null>(null)
-  
   const [processingId, setProcessingId] = useState<string | null>(null)
   const [rejectingId, setRejectingId] = useState<string | null>(null)
   const [confirmRejectId, setConfirmRejectId] = useState<string | null>(null)
@@ -49,12 +47,6 @@ export default function SuperadminDashboard({
   )
 
   useEffect(() => {
-    const checkUser = async () => {
-      const { data: { user } } = await supabase.auth.getUser()
-      setCurrentUserId(user?.id || null)
-    }
-    checkUser()
-
     const channel = supabase
       .channel('schema-db-changes')
       .on(
@@ -178,18 +170,21 @@ export default function SuperadminDashboard({
                     <p className="text-sm text-muted-foreground line-clamp-3">
                         {app.bio}
                     </p>
-                    <div className="pt-4 border-t space-y-3">
+                    <div className="pt-4 border-t space-y-2">
                         <Label className="text-[10px] font-black uppercase text-muted-foreground tracking-widest flex items-center gap-2">
-                          <Send className="w-3 h-3 text-indigo-500" />
-                          Chat Interna con il Candidato
+                          <Mail className="w-3 h-3 text-indigo-500" />
+                          Contatta il candidato
                         </Label>
-                        
-                        {currentUserId && (
-                          <ApplicationChat 
-                            applicationId={app.id} 
-                            currentUserId={currentUserId}
-                            userRole="superadmin"
-                          />
+                        {app.email ? (
+                          <a
+                            href={`mailto:${app.email}?subject=Riguardo la tua candidatura`}
+                            className={buttonVariants({ variant: 'outline', size: 'sm' }) + " w-full"}
+                          >
+                            <Mail className="w-3 h-3 mr-1.5" />
+                            Rispondi via Email ({app.email})
+                          </a>
+                        ) : (
+                          <p className="text-xs text-muted-foreground italic">Email non disponibile.</p>
                         )}
                     </div>
                   </CardContent>

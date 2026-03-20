@@ -1,7 +1,12 @@
 'use server'
 
 import { createClient, createAdminClient } from '@/utils/supabase/server'
+import { Resend } from 'resend'
 import { z } from 'zod'
+
+const resend = process.env.RESEND_API_KEY && process.env.RESEND_API_KEY !== 're_...'
+  ? new Resend(process.env.RESEND_API_KEY)
+  : null
 
 const ApplicationSchema = z.object({
   fullName: z.string().min(2, "Il nome deve avere almeno 2 caratteri"),
@@ -28,6 +33,7 @@ export async function applyForProfessor(formData: z.infer<typeof ApplicationSche
       full_name: fullName,
       bio: bio,
       subjects: subjects,
+      email: user.email, // Salva l'email di registrazione
     })
 
   if (insertError) {
@@ -50,6 +56,43 @@ export async function applyForProfessor(formData: z.infer<typeof ApplicationSche
 
   if (updateError) {
     return { error: "Richiesta inviata, ma errore nell'aggiornamento del ruolo." }
+  }
+
+  // 3. Email notifica all'admin
+  if (resend) {
+    try {
+      const adminClient2 = await createAdminClient()
+      const { data: authUserData } = await adminClient2.auth.admin.getUserById(user.id)
+      const applicantEmail = authUserData?.user?.email || 'N/D'
+      const adminEmail = process.env.RESEND_FROM_EMAIL || 'onboarding@resend.dev'
+      const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'
+
+      await resend.emails.send({
+        from: `Notifiche Piattaforma <${process.env.RESEND_FROM_EMAIL || 'onboarding@resend.dev'}>`,
+        to: adminEmail,
+        subject: `📋 Nuova candidatura docente: ${fullName}`,
+        html: `
+          <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; padding: 24px; border: 1px solid #e2e8f0; border-radius: 12px;">
+            <h2 style="color: #4f46e5; margin-bottom: 4px;">Nuova Richiesta Docente</h2>
+            <p style="color: #6b7280; font-size: 14px; margin-bottom: 24px;">Un utente vuole diventare insegnante sulla piattaforma.</p>
+
+            <div style="background: #f8fafc; border-radius: 8px; padding: 16px; margin-bottom: 16px;">
+              <p style="margin: 0 0 8px;"><strong>👤 Nome:</strong> ${fullName}</p>
+              <p style="margin: 0 0 8px;"><strong>📧 Email:</strong> ${applicantEmail}</p>
+              <p style="margin: 0 0 8px;"><strong>📚 Materie:</strong> ${subjects.join(', ')}</p>
+              <p style="margin: 0;"><strong>📝 Bio:</strong> ${bio.substring(0, 200)}${bio.length > 200 ? '...' : ''}</p>
+            </div>
+
+            <a href="${siteUrl}/dashboard" style="display: inline-block; background-color: #4f46e5; color: white; padding: 10px 20px; border-radius: 8px; text-decoration: none; font-weight: bold;">
+              Vai alla Dashboard →
+            </a>
+          </div>
+        `,
+      })
+    } catch (e) {
+      console.error('Errore invio email admin:', e)
+      // Non blocchiamo il successo
+    }
   }
 
   return { success: true }
@@ -98,39 +141,4 @@ export async function updateApplicationNotes(userId: string, notes: string) {
   return { success: true }
 }
 
-export async function sendApplicationMessage(applicationId: string, content: string) {
-  const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
-  if (!user) return { error: "Non autorizzato." }
 
-  const { error } = await supabase
-    .from('application_messages')
-    .insert({
-      application_id: applicationId,
-      sender_id: user.id,
-      content: content.trim()
-    })
-
-  if (error) return { error: "Errore nell'invio del messaggio." }
-  return { success: true }
-}
-
-export async function getApplicationMessages(applicationId: string, limit: number = 5) {
-  const supabase = await createClient()
-  
-  const { data, error } = await supabase
-    .from('application_messages')
-    .select(`
-      id,
-      content,
-      created_at,
-      sender_id,
-      profiles:sender_id (role, first_name, last_name)
-    `)
-    .eq('application_id', applicationId)
-    .order('created_at', { ascending: false })
-    .limit(limit)
-
-  if (error) return { error: "Errore nel caricamento dei messaggi." }
-  return { data: data.reverse() } // Reverse to show chronological order in UI
-}
