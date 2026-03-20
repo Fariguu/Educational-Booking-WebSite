@@ -2,12 +2,12 @@
 
 import { useEffect, useState } from 'react'
 import { createBrowserClient } from '@supabase/ssr'
-import { Check, MailX, Loader2 } from 'lucide-react'
+import { Check, MailX, Loader2, X } from 'lucide-react'
 import { toast } from 'sonner'
 import { Card, CardContent, CardHeader, CardTitle, CardFooter } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
-import { approveApplication } from '@/app/actions/roles'
+import { approveApplication, rejectApplication } from '@/app/actions/roles'
 
 type Application = {
   id: string
@@ -24,6 +24,8 @@ export default function SuperadminDashboard({
 }) {
   const [applications, setApplications] = useState<Application[]>(initialApplications)
   const [processingId, setProcessingId] = useState<string | null>(null)
+  const [rejectingId, setRejectingId] = useState<string | null>(null)
+  const [confirmRejectId, setConfirmRejectId] = useState<string | null>(null)
 
   useEffect(() => {
     const supabase = createBrowserClient(
@@ -74,13 +76,34 @@ export default function SuperadminDashboard({
          toast.error(res.error)
       } else {
          toast.success(`${name} è stato approvato come Professore!`)
-         // The DELETE event might arrive and remove it, but we can do it proactively
          setApplications(prev => prev.filter(app => app.id !== id))
       }
     } catch {
        toast.error("Errore di rete imprevisto.")
     } finally {
        setProcessingId(null)
+    }
+  }
+
+  const handleReject = async (id: string, name: string) => {
+    if (confirmRejectId !== id) {
+      setConfirmRejectId(id)
+      return
+    }
+    setRejectingId(id)
+    setConfirmRejectId(null)
+    try {
+      const res = await rejectApplication(id)
+      if (res.error) {
+        toast.error(res.error)
+      } else {
+        toast.info(`Candidatura di ${name} rifiutata.`)
+        setApplications(prev => prev.filter(app => app.id !== id))
+      }
+    } catch {
+      toast.error("Errore di rete imprevisto.")
+    } finally {
+      setRejectingId(null)
     }
   }
 
@@ -119,18 +142,35 @@ export default function SuperadminDashboard({
                     {app.bio}
                 </p>
               </CardContent>
-              <CardFooter className="pt-3 border-t bg-muted/20">
+              <CardFooter className="pt-3 border-t bg-muted/20 flex gap-2">
                 <Button 
                     onClick={() => handleApprove(app.id, app.full_name)}
-                    disabled={processingId === app.id}
-                    className="w-full bg-emerald-600 hover:bg-emerald-700 text-white"
+                    disabled={processingId === app.id || rejectingId === app.id}
+                    className="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white"
                 >
                     {processingId === app.id ? (
                         <Loader2 className="w-4 h-4 mr-2 animate-spin" />
                     ) : (
                         <Check className="w-4 h-4 mr-2" />
                     )}
-                    Approva Docente
+                    Approva
+                </Button>
+                <Button
+                    variant="outline"
+                    onClick={() => handleReject(app.id, app.full_name)}
+                    disabled={processingId === app.id || rejectingId === app.id}
+                    className={`flex-1 border-red-200 hover:bg-red-50 ${
+                      confirmRejectId === app.id 
+                        ? 'text-white bg-red-600 hover:bg-red-700 border-red-600' 
+                        : 'text-red-600'
+                    }`}
+                >
+                    {rejectingId === app.id ? (
+                        <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                    ) : (
+                        <X className="w-4 h-4 mr-2" />
+                    )}
+                    {confirmRejectId === app.id ? 'Conferma Rifiuto' : 'Rifiuta'}
                 </Button>
               </CardFooter>
             </Card>

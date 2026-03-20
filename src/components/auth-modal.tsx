@@ -57,7 +57,8 @@ export default function AuthModal() {
     setErrorMsg(null)
     const newParams = new URLSearchParams(searchParams.toString())
     newParams.delete('auth')
-    router.push(`${pathname}?${newParams.toString()}`)
+    const queryString = newParams.toString()
+    router.push(queryString ? `${pathname}?${queryString}` : pathname)
   }
 
   const toggleMode = () => {

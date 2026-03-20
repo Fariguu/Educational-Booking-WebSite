@@ -39,7 +39,7 @@ export default function ProfessorApplicationForm() {
     defaultValues: {
       fullName: '',
       bio: '',
-      subjects: [{ value: 'Matematica' }],
+      subjects: [{ value: '' }],
     }
   })
 

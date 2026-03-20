@@ -64,3 +64,25 @@ export async function approveApplication(userId: string) {
   
   return { success: true }
 }
+
+export async function rejectApplication(userId: string) {
+  const adminClient = await createAdminClient()
+
+  // 1. Elimina la candidatura
+  const { error: deleteError } = await adminClient
+    .from('professor_applications')
+    .delete()
+    .eq('id', userId)
+
+  if (deleteError) return { error: 'Errore durante l\'eliminazione della candidatura.' }
+
+  // 2. Ripristina il ruolo a 'user'
+  const { error: updateError } = await adminClient
+    .from('profiles')
+    .update({ role: 'user' })
+    .eq('id', userId)
+
+  if (updateError) return { error: 'Candidatura eliminata ma errore nel ripristino del ruolo.' }
+
+  return { success: true }
+}

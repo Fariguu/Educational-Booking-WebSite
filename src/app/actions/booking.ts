@@ -14,6 +14,7 @@ const BookingSchema = z.object({
   turnstileToken: z.string().min(1, "Validazione anti-spam fallita"),
   requestedStartTime: z.string().datetime(),
   requestedEndTime: z.string().datetime(),
+  studentId: z.string().uuid().optional(),
 })
 
 export async function bookLesson(formData: z.infer<typeof BookingSchema>) {
@@ -23,7 +24,7 @@ export async function bookLesson(formData: z.infer<typeof BookingSchema>) {
     return { error: validated.error.issues[0].message }
   }
 
-  const { slotId, studentName, studentContact, notes, turnstileToken, requestedStartTime, requestedEndTime } = validated.data
+  const { slotId, studentName, studentContact, notes, turnstileToken, requestedStartTime, requestedEndTime, studentId } = validated.data
 
   // 2. Verifica Turnstile
   try {
@@ -59,7 +60,8 @@ export async function bookLesson(formData: z.infer<typeof BookingSchema>) {
       p_req_end: requestedEndTime,
       p_name: studentName,
       p_email: studentContact,
-      p_notes: notes || null
+      p_notes: notes || null,
+      p_student_id: studentId || null
   })
 
   // Poiché la RPC usa FOR UPDATE, se c'è un errore Postgres lo troveremo qui
