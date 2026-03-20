@@ -81,11 +81,15 @@ export default function AuthModal() {
           router.refresh()
         }
       } else {
-        const res = await registerWithPassword(data)
+        const res = await registerWithPassword(data) as any
         if (res.error) {
           setErrorMsg(res.error)
         } else {
-          toast.success("Account creato con successo! Ora sei loggato.")
+          if (res.message) {
+            toast.info(res.message, { duration: 6000 })
+          } else {
+            toast.success("Account creato con successo! Ora sei loggato.")
+          }
           closeMenu()
           router.refresh()
         }

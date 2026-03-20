@@ -23,7 +23,7 @@ export async function loginWithPassword(formData: z.infer<typeof AuthSchema>) {
   })
 
   if (error) {
-    return { error: "Credenziali non valide." }
+    return { error: error.message }
   }
 
   return { success: true }
@@ -45,6 +45,15 @@ export async function registerWithPassword(formData: z.infer<typeof AuthSchema>)
 
   if (error) {
     return { error: error.message }
+  }
+
+  // Se l'utente è stato creato ma richiede conferma email, Supabase data.user sarà presente
+  if (data?.user && data.user.identities?.length === 0) {
+    return { error: "Email già registrata. Prova ad accedere." }
+  }
+
+  if (data?.session === null) {
+      return { success: true, message: "Registrazione completata! Controlla la tua email per confermare l'account." }
   }
 
   return { success: true }
