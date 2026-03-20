@@ -13,19 +13,21 @@ export default async function PublicNavbar() {
   const { data: { user } } = await supabase.auth.getUser()
 
   let role: string | null = null
+  let fullName: string | null = null
   if (user) {
     const { data: profile } = await supabase
       .from('profiles')
-      .select('role')
+      .select('role, first_name, last_name')
       .eq('id', user.id)
       .single()
     role = profile?.role || null
+    fullName = profile?.first_name && profile?.last_name 
+      ? `${profile.first_name} ${profile.last_name}` 
+      : null
   }
 
   const getDashboardUrl = () => {
-    if (role === 'superadmin' || role === 'admin') return '/admin-dashboard'
-    if (role === 'professor') return '/admin'
-    return null
+    return '/dashboard' // Unified dashboard
   }
 
   const dashboardUrl = getDashboardUrl()
@@ -34,16 +36,15 @@ export default async function PublicNavbar() {
     <header className="sticky top-0 z-50 border-b bg-background/80 backdrop-blur-md">
       <div className="container mx-auto px-4 h-16 flex items-center justify-between">
         {/* Logo */}
-        <Link href="/" className="flex items-center gap-2 font-bold text-lg">
-          <BookOpen className="w-5 h-5 text-indigo-600" />
-          <span>PrenotaLezioni</span>
-        </Link>
+        <div className="flex-1 flex items-center">
+          <Link href="/" className="flex items-center gap-2 font-bold text-lg">
+            <BookOpen className="w-5 h-5 text-indigo-600" />
+            <span>PrenotaLezioni</span>
+          </Link>
+        </div>
 
         {/* Nav links */}
-        <nav className="hidden sm:flex items-center gap-6 text-sm font-medium text-muted-foreground mr-6">
-          <Link href="/" className="hover:text-foreground transition-colors">
-            Cerca Docente
-          </Link>
+        <nav className="hidden sm:flex flex-1 justify-center items-center gap-6 text-sm font-medium text-muted-foreground">
           {user && role === 'user' && (
             <Link href="/diventa-insegnante" className="hover:text-foreground transition-colors flex items-center gap-1.5">
               <GraduationCap className="w-4 h-4" />
@@ -53,13 +54,13 @@ export default async function PublicNavbar() {
         </nav>
 
         {/* CTA & Auth */}
-        <div className="flex items-center gap-4">
+        <div className="flex-1 flex items-center justify-end gap-4">
           {!user ? (
             <>
               <Link href="/?auth=login" className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors hidden sm:block">
                 Accedi
               </Link>
-              <Link href="/">
+              <Link href="/cerca">
                 <Button size="sm" className="bg-indigo-600 hover:bg-indigo-700 text-white shadow-sm">
                   Cerca
                   <ArrowRight className="ml-1.5 w-4 h-4" />
@@ -68,6 +69,10 @@ export default async function PublicNavbar() {
             </>
           ) : (
             <div className="flex items-center gap-3">
+              <div className="hidden lg:flex flex-col items-end mr-2">
+                <span className="text-sm font-bold leading-none">{fullName || user.email?.split('@')[0]}</span>
+                <span className="text-[10px] text-muted-foreground uppercase tracking-wider mt-0.5">{role}</span>
+              </div>
               {dashboardUrl && (
                 <Link href={dashboardUrl}>
                   <Button variant="outline" size="sm" className="hidden sm:flex items-center gap-2 border-indigo-200 text-indigo-700 bg-indigo-50/50 hover:bg-indigo-50">

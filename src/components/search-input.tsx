@@ -17,9 +17,9 @@ export default function SearchInput() {
     e.preventDefault();
     startTransition(() => {
       if (query.trim()) {
-        router.push(`/?q=${encodeURIComponent(query.trim())}`);
+        router.push(`/cerca?q=${encodeURIComponent(query.trim())}`);
       } else {
-        router.push(`/`);
+        router.push(`/cerca`);
       }
     });
   };
