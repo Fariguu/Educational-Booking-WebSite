@@ -1,6 +1,6 @@
 import { createClient } from './supabase/server'
 
-export type UserRole = 'user' | 'student' | 'professor' | 'pending_professor' | 'admin'
+export type UserRole = 'user' | 'student' | 'professor' | 'pending_professor' | 'admin' | 'superadmin'
 
 /**
  * Verifica se l'utente attuale è autenticato e ha uno dei ruoli richiesti.

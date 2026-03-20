@@ -107,7 +107,7 @@ export async function applyForProfessor(formData: z.infer<typeof ApplicationSche
 
 export async function approveApplication(userId: string) {
   try {
-    await requireRole(['admin'])
+    await requireRole(['admin', 'superadmin'])
   } catch (e: any) {
     return { error: e.message || "Non autorizzato" }
   }
@@ -123,7 +123,7 @@ export async function approveApplication(userId: string) {
 
 export async function rejectApplication(userId: string) {
   try {
-    await requireRole(['admin'])
+    await requireRole(['admin', 'superadmin'])
   } catch (e: any) {
     return { error: e.message || "Non autorizzato" }
   }
@@ -151,7 +151,7 @@ export async function rejectApplication(userId: string) {
 
 export async function updateApplicationNotes(userId: string, notes: string) {
   try {
-    await requireRole(['admin'])
+    await requireRole(['admin', 'superadmin'])
   } catch (e: any) {
     return { error: e.message || "Non autorizzato" }
   }

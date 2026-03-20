@@ -17,7 +17,7 @@ import { addDays } from 'date-fns'
 
 export async function createSlot(formData: z.infer<typeof CreateSlotSchema>) {
   try {
-    await requireRole(['professor', 'admin'])
+    await requireRole(['professor', 'admin', 'superadmin'])
   } catch (e: any) {
     return { error: e.message || "Non autorizzato" }
   }
@@ -78,7 +78,7 @@ export async function createSlot(formData: z.infer<typeof CreateSlotSchema>) {
 
 export async function removeAvailableSlot(slotId: string) {
   try {
-    await requireRole(['professor', 'admin'])
+    await requireRole(['professor', 'admin', 'superadmin'])
   } catch (e: any) {
     return { error: e.message || "Non autorizzato" }
   }
@@ -109,7 +109,7 @@ const resend = process.env.RESEND_API_KEY && process.env.RESEND_API_KEY !== 're_
 
 export async function confirmLesson(lessonId: string) {
   try {
-    await requireRole(['professor', 'admin'])
+    await requireRole(['professor', 'admin', 'superadmin'])
   } catch (e: any) {
     return { error: e.message || "Non autorizzato" }
   }
@@ -170,7 +170,7 @@ export async function confirmLesson(lessonId: string) {
 
 export async function rejectLesson(lessonId: string) {
   try {
-    await requireRole(['professor', 'admin'])
+    await requireRole(['professor', 'admin', 'superadmin'])
   } catch (e: any) {
     return { error: e.message || "Non autorizzato" }
   }
@@ -214,7 +214,7 @@ export async function rejectLesson(lessonId: string) {
 
 export async function updateLessonTime(lessonId: string, newStartTime: string, newEndTime: string) {
   try {
-    await requireRole(['professor', 'admin'])
+    await requireRole(['professor', 'admin', 'superadmin'])
   } catch (e: any) {
     return { error: e.message || "Non autorizzato" }
   }
@@ -274,7 +274,7 @@ export async function updateLessonTime(lessonId: string, newStartTime: string, n
 
 export async function cancelLessonWithChoice(lessonId: string, keepAvailable: boolean) {
   try {
-    await requireRole(['professor', 'admin'])
+    await requireRole(['professor', 'admin', 'superadmin'])
   } catch (e: any) {
     return { error: e.message || "Non autorizzato" }
   }
