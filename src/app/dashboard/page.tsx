@@ -26,8 +26,9 @@ export default async function DashboardPage() {
 
   if (!profile) {
     return (
-      <div className="p-4 bg-destructive/15 text-destructive rounded-md">
-        Profilo non trovato. Contatta il supporto.
+      <div className="flex flex-col items-center justify-center min-h-[50vh] text-center p-6 bg-destructive/5 rounded-3xl border border-destructive/10">
+        <h2 className="text-xl font-bold text-destructive mb-2">Profilo non trovato</h2>
+        <p className="text-muted-foreground">Non abbiamo trovato un profilo associato al tuo account. Contatta il supporto se il problema persiste.</p>
       </div>
     )
   }
