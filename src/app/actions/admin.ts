@@ -1,6 +1,7 @@
 'use server'
 
 import { createClient } from '@/utils/supabase/server'
+import { requireRole } from '@/utils/auth-check'
 import { revalidatePath } from 'next/cache'
 import { z } from 'zod'
 
@@ -15,10 +16,15 @@ const CreateSlotSchema = z.object({
 import { addDays } from 'date-fns'
 
 export async function createSlot(formData: z.infer<typeof CreateSlotSchema>) {
-  const supabase = await createClient()
+  try {
+    await requireRole(['professor', 'admin'])
+  } catch (e: any) {
+    return { error: e.message || "Non autorizzato" }
+  }
 
+  const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
-  if (!user) return { error: "Non autorizzato" }
+  if (!user) return { error: "Utente non trovato" }
 
   const validated = CreateSlotSchema.safeParse(formData)
   if (!validated.success) return { error: "Dati non validi" }
@@ -41,7 +47,8 @@ export async function createSlot(formData: z.infer<typeof CreateSlotSchema>) {
         start_time: currentStart.toISOString(),
         end_time: currentEnd.toISOString(), // ISO renderà l'ora UTC corretta basata sulla data locale
         is_available: true,
-        status: 'available'
+        status: 'available',
+        professor_id: user.id
       })
 
       // Prossima settimana (+ 7 giorni usando date-fns per preservare l'ora locale attraverso DST)
@@ -53,7 +60,8 @@ export async function createSlot(formData: z.infer<typeof CreateSlotSchema>) {
       start_time: start_time,
       end_time: end_time,
       is_available: true,
-      status: 'available'
+      status: 'available',
+      professor_id: user.id
     })
   }
 
@@ -69,10 +77,15 @@ export async function createSlot(formData: z.infer<typeof CreateSlotSchema>) {
 }
 
 export async function removeAvailableSlot(slotId: string) {
-  const supabase = await createClient()
+  try {
+    await requireRole(['professor', 'admin'])
+  } catch (e: any) {
+    return { error: e.message || "Non autorizzato" }
+  }
 
+  const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
-  if (!user) return { error: "Non autorizzato" }
+  if (!user) return { error: "Utente non trovato" }
 
   // Può eliminare solo se è effettivamente 'available' (sicurezza extra per non cancellare prenotazioni in corso)
   const { error } = await supabase
@@ -95,9 +108,15 @@ const resend = process.env.RESEND_API_KEY && process.env.RESEND_API_KEY !== 're_
   : null;
 
 export async function confirmLesson(lessonId: string) {
+  try {
+    await requireRole(['professor', 'admin'])
+  } catch (e: any) {
+    return { error: e.message || "Non autorizzato" }
+  }
+
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
-  if (!user) return { error: "Non autorizzato" }
+  if (!user) return { error: "Utente non trovato" }
 
   const { data: lesson, error: fetchErr } = await supabase
     .from('lessons')
@@ -150,9 +169,15 @@ export async function confirmLesson(lessonId: string) {
 }
 
 export async function rejectLesson(lessonId: string) {
+  try {
+    await requireRole(['professor', 'admin'])
+  } catch (e: any) {
+    return { error: e.message || "Non autorizzato" }
+  }
+
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
-  if (!user) return { error: "Non autorizzato" }
+  if (!user) return { error: "Utente non trovato" }
 
   const { data: lesson } = await supabase.from('lessons').select('student_contact, student_name').eq('id', lessonId).single()
 
@@ -188,9 +213,15 @@ export async function rejectLesson(lessonId: string) {
 }
 
 export async function updateLessonTime(lessonId: string, newStartTime: string, newEndTime: string) {
+  try {
+    await requireRole(['professor', 'admin'])
+  } catch (e: any) {
+    return { error: e.message || "Non autorizzato" }
+  }
+
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
-  if (!user) return { error: "Non autorizzato" }
+  if (!user) return { error: "Utente non trovato" }
 
   const { data: lesson, error: fetchErr } = await supabase
     .from('lessons')
@@ -242,9 +273,15 @@ export async function updateLessonTime(lessonId: string, newStartTime: string, n
 }
 
 export async function cancelLessonWithChoice(lessonId: string, keepAvailable: boolean) {
+  try {
+    await requireRole(['professor', 'admin'])
+  } catch (e: any) {
+    return { error: e.message || "Non autorizzato" }
+  }
+
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
-  if (!user) return { error: "Non autorizzato" }
+  if (!user) return { error: "Utente non trovato" }
 
   const { data: lesson, error: fetchErr } = await supabase
     .from('lessons')

@@ -14,6 +14,7 @@ const BookingSchema = z.object({
   turnstileToken: z.string().min(1, "Validazione anti-spam fallita"),
   requestedStartTime: z.string().datetime(),
   requestedEndTime: z.string().datetime(),
+  studentId: z.string().uuid().optional(),
 })
 
 export async function bookLesson(formData: z.infer<typeof BookingSchema>) {
@@ -23,7 +24,7 @@ export async function bookLesson(formData: z.infer<typeof BookingSchema>) {
     return { error: validated.error.issues[0].message }
   }
 
-  const { slotId, studentName, studentContact, notes, turnstileToken, requestedStartTime, requestedEndTime } = validated.data
+  const { slotId, studentName, studentContact, notes, turnstileToken, requestedStartTime, requestedEndTime, studentId } = validated.data
 
   // 2. Verifica Turnstile
   try {
@@ -59,7 +60,8 @@ export async function bookLesson(formData: z.infer<typeof BookingSchema>) {
       p_req_end: requestedEndTime,
       p_name: studentName,
       p_email: studentContact,
-      p_notes: notes || null
+      p_notes: notes || null,
+      p_student_id: studentId || null
   })
 
   // Poiché la RPC usa FOR UPDATE, se c'è un errore Postgres lo troveremo qui
@@ -146,9 +148,15 @@ export async function requestReschedule(formData: z.infer<typeof RescheduleSchem
   // Notifica all'insegnante
   if (process.env.RESEND_API_KEY && process.env.RESEND_API_KEY !== 're_...') {
     const fromEmail = process.env.RESEND_FROM_EMAIL || 'Prenotazioni <onboarding@resend.dev>'
-    // L'insegnante è temporaneamente associato al destinatario hard-coded o prendiamo l'Auth user se fosse MultiTenant. In SingleTenant, mandiamo al fromEmail (o se avessimo una env var ADMIN_EMAIL). 
-    // Per ora mandiamo alla mail di onboading (o quella validata su resend)
-    const adminEmail = process.env.ADMIN_EMAIL || fromEmail
+    let adminEmail = process.env.ADMIN_EMAIL || fromEmail;
+    
+    // Recupera l'email del professore se presente
+    if (lesson.professor_id) {
+       const { data: profAuthData, error: profAuthError } = await supabase.auth.admin.getUserById(lesson.professor_id);
+       if (!profAuthError && profAuthData?.user?.email) {
+           adminEmail = profAuthData.user.email;
+       }
+    }
 
     try {
       await resend.emails.send({

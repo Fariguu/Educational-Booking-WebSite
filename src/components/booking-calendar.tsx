@@ -74,7 +74,7 @@ const formSchema = z.object({
 });
 type FormValues = z.infer<typeof formSchema>;
 
-export default function BookingCalendar() {
+export default function BookingCalendar({ professorId }: { professorId: string }) {
   const [slots, setSlots] = useState<Slot[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -84,6 +84,7 @@ export default function BookingCalendar() {
   const [turnstileToken, setTurnstileToken] = useState("");
   const [turnstileKey, setTurnstileKey] = useState(0);
   const [selectedTimeRange, setSelectedTimeRange] = useState<{start: Date, end: Date} | null>(null);
+  const [studentId, setStudentId] = useState<string | null>(null);
 
   const availableTimeRanges = selectedSlot ? generateTimeSlots(new Date(selectedSlot.start_time), new Date(selectedSlot.end_time)) : [];
 
@@ -103,6 +104,23 @@ export default function BookingCalendar() {
 
   const privacyChecked = watch('privacy');
 
+  // Pre-fill form fields if user is logged in
+  useEffect(() => {
+    const supabase = createClient();
+    supabase.auth.getUser().then(({ data: { user } }) => {
+      if (user) {
+        setStudentId(user.id);
+        // Try to get full name from profile
+        supabase.from('profiles').select('first_name, last_name').eq('id', user.id).single().then(({ data }) => {
+          if (data?.first_name || data?.last_name) {
+            setValue('studentName', `${data.first_name ?? ''} ${data.last_name ?? ''}`.trim());
+          }
+        });
+        setValue('studentContact', user.email ?? '');
+      }
+    });
+  }, [setValue]);
+
   const fetchSlots = async () => {
     try {
       setLoading(true);
@@ -110,6 +128,7 @@ export default function BookingCalendar() {
       const { data, error: fetchError } = await supabase
         .from("lessons")
         .select("id, start_time, end_time, is_available, status")
+        .eq("professor_id", professorId)
         .gte("start_time", new Date().toISOString())
         .order("start_time", { ascending: true });
       if (fetchError) throw fetchError;
@@ -141,7 +160,8 @@ export default function BookingCalendar() {
        slotId: selectedSlot.id,
        turnstileToken,
        requestedStartTime: selectedTimeRange.start.toISOString(),
-       requestedEndTime: selectedTimeRange.end.toISOString()
+       requestedEndTime: selectedTimeRange.end.toISOString(),
+       studentId: studentId ?? undefined,
     });
     if (result.error) {
       setError(result.error);
