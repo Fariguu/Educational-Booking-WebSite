@@ -9,7 +9,7 @@ export const metadata: Metadata = {
 };
 
 export default function PrivacyPage() {
-  const lastUpdated = "12 marzo 2026";
+  const lastUpdated = "20 marzo 2026";
 
   return (
     <main className="min-h-screen bg-background">
@@ -29,151 +29,136 @@ export default function PrivacyPage() {
         </div>
 
         <div className="prose prose-gray max-w-none space-y-8 text-muted-foreground leading-relaxed">
-
           <section>
             <h2 className="text-lg font-bold text-foreground mb-2">
               1. Titolare del Trattamento
             </h2>
             <p>
-              Il titolare del trattamento dei dati personali è il docente privato
-              che gestisce questo sito di prenotazioni (di seguito &quot;il Professore&quot;).
-              Per qualsiasi richiesta relativa ai tuoi dati personali, puoi
-              contattarlo tramite il{" "}
-              <Link href="/contatti" className="text-indigo-600 hover:underline">
-                modulo di contatto
-              </Link>
-              .
+              Il titolare del trattamento dei dati è{" "}
+              <strong className="text-foreground">Gabriele Vitocosmo Farigu</strong>,
+              contattabile all&apos;indirizzo email:{" "}
+              <a href="mailto:farigugabriele@gmail.com" className="text-indigo-600 hover:underline">
+                farigugabriele@gmail.com
+              </a>.
             </p>
           </section>
 
           <section>
             <h2 className="text-lg font-bold text-foreground mb-2">
-              2. Dati Raccolti e Finalità
+              2. Dati Raccolti
             </h2>
             <p>
-              Il sito raccoglie i seguenti dati personali, esclusivamente forniti
-              volontariamente dall&apos;utente:
+              Raccogliamo i seguenti tipi di dati per fornirti i nostri servizi:
             </p>
-            <ul className="list-disc list-inside space-y-2 mt-3">
-              <li>
-                <strong className="text-foreground">Prenotazione lezione</strong>: nome
-                completo, indirizzo email, note opzionali. Finalità: gestire la
-                richiesta di prenotazione e comunicare l&apos;esito.
-              </li>
-              <li>
-                <strong className="text-foreground">Modulo di contatto</strong>: nome
-                completo, indirizzo email, messaggio. Finalità: rispondere alla
-                richiesta o domanda inviata.
-              </li>
-            </ul>
-            <p className="mt-3">
-              Non vengono raccolti dati sensibili, dati di minori o dati di
-              profilazione a fini commerciali.
-            </p>
+            <div className="space-y-4 mt-3">
+              <div>
+                <h3 className="font-semibold text-foreground">A. Dati degli Utenti Registrati</h3>
+                <ul className="list-disc list-inside space-y-1">
+                  <li>Dati Identificativi: Nome, Cognome.</li>
+                  <li>Dati di Contatto: Indirizzo Email, Numero di Telefono.</li>
+                  <li>Dati Profilo: Biografia, Materie di insegnamento (solo per docenti).</li>
+                  <li>Dati di Autenticazione: Password (criptata tramite Supabase).</li>
+                </ul>
+              </div>
+              <div>
+                <h3 className="font-semibold text-foreground">B. Dati delle Prenotazioni</h3>
+                <p>Nome dello studente, Email di contatto, Note opzionali, Data e Ora della lezione.</p>
+              </div>
+              <div>
+                <h3 className="font-semibold text-foreground">C. Modulo di Contatto</h3>
+                <p>Nome, Email, Messaggio inviato.</p>
+              </div>
+            </div>
           </section>
 
           <section>
             <h2 className="text-lg font-bold text-foreground mb-2">
-              3. Base Giuridica del Trattamento
+              3. Finalità del Trattamento
             </h2>
-            <p>
-              Il trattamento dei dati si basa sul consenso esplicito dell&apos;utente,
-              espresso mediante la spunta della casella di accettazione privacy
-              presente nei moduli del sito (art. 6, par. 1, lett. a del GDPR).
-            </p>
+            <p>I dati vengono trattati esclusivamente per:</p>
+            <ol className="list-decimal list-inside space-y-1 mt-3">
+              <li>Consentire la registrazione e l&apos;accesso alla piattaforma.</li>
+              <li>Gestire le prenotazioni tra studenti e docenti.</li>
+              <li>Inviare notifiche email transazionali (conferme, promemoria, alert sicurezza).</li>
+              <li>Rispondere alle richieste inviate tramite il modulo di contatto.</li>
+              <li>Garantire la sicurezza del sito tramite protezione anti-spam.</li>
+            </ol>
           </section>
 
           <section>
             <h2 className="text-lg font-bold text-foreground mb-2">
-              4. Conservazione dei Dati
+              4. Base Giuridica
             </h2>
-            <p>
-              I dati relativi alle prenotazioni e ai messaggi di contatto vengono
-              conservati per il tempo strettamente necessario alla gestione della
-              richiesta e comunque non oltre <strong className="text-foreground">12 mesi</strong> dalla
-              raccolta, salvo obblighi di legge.
-            </p>
-          </section>
-
-          <section>
-            <h2 className="text-lg font-bold text-foreground mb-2">
-              5. Terze Parti e Trasferimento Dati
-            </h2>
-            <p>
-              Per il funzionamento del sito vengono utilizzati i seguenti servizi
-              di terze parti, ciascuno con propria informativa privacy:
-            </p>
-            <ul className="list-disc list-inside space-y-2 mt-3">
+            <p>Il trattamento dei tuoi dati si basa su:</p>
+            <ul className="list-disc list-inside space-y-1 mt-3">
               <li>
-                <strong className="text-foreground">Supabase</strong> – database
-                e autenticazione (server in EU). Informativa:{" "}
-                <a
-                  href="https://supabase.com/privacy"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-indigo-600 hover:underline"
-                >
-                  supabase.com/privacy
-                </a>
+                <strong className="text-foreground">Esecuzione di un contratto</strong>: Per la gestione delle prenotazioni e dell&apos;account.
               </li>
               <li>
-                <strong className="text-foreground">Cloudflare Turnstile</strong> –
-                protezione anti-spam (nessun dato biometrico raccolto). Informativa:{" "}
-                <a
-                  href="https://www.cloudflare.com/privacypolicy/"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-indigo-600 hover:underline"
-                >
-                  cloudflare.com/privacypolicy
-                </a>
+                <strong className="text-foreground">Consenso</strong>: Per l&apos;invio di messaggi tramite il modulo contatti e la candidatura a docente.
               </li>
               <li>
-                <strong className="text-foreground">Vercel</strong> – hosting e
-                analytics anonimi. Informativa:{" "}
-                <a
-                  href="https://vercel.com/legal/privacy-policy"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-indigo-600 hover:underline"
-                >
-                  vercel.com/legal/privacy-policy
-                </a>
+                <strong className="text-foreground">Legittimo interesse</strong>: Per la protezione del sito da spam e attacchi informatici.
               </li>
             </ul>
           </section>
 
           <section>
             <h2 className="text-lg font-bold text-foreground mb-2">
-              6. Diritti dell&apos;Interessato
+              5. Destinatari dei Dati e Processori Terzi
             </h2>
             <p>
-              Ai sensi del GDPR (artt. 15-22), hai il diritto di:
+              I tuoi dati non saranno venduti a terzi. Utilizziamo i seguenti servizi per gestire l&apos;infrastruttura tecnologica:
             </p>
+            <ul className="list-disc list-inside space-y-2 mt-3">
+              <li>
+                <strong className="text-foreground">Supabase</strong> – archiviazione sicura dei dati e autenticazione.
+              </li>
+              <li>
+                <strong className="text-foreground">Resend</strong> – invio di email transazionali.
+              </li>
+              <li>
+                <strong className="text-foreground">Cloudflare</strong> – protezione anti-spam tramite il widget Turnstile.
+              </li>
+            </ul>
+          </section>
+
+          <section>
+            <h2 className="text-lg font-bold text-foreground mb-2">
+              6. Conservazione dei Dati
+            </h2>
+            <p>
+              Conserveremo i tuoi dati personali solo per il tempo necessario a soddisfare gli scopi per cui li abbiamo raccolti, incluse eventuali necessità di legge o reportistica. Puoi richiedere la cancellazione del tuo account in qualsiasi momento.
+            </p>
+          </section>
+
+          <section>
+            <h2 className="text-lg font-bold text-foreground mb-2">
+              7. I Tuoi Diritti
+            </h2>
+            <p>In base al GDPR, hai il diritto di:</p>
             <ul className="list-disc list-inside space-y-1 mt-3">
               <li>Accedere ai tuoi dati personali;</li>
-              <li>Ottenere la rettifica o la cancellazione dei dati;</li>
-              <li>Limitare od opporti al trattamento;</li>
-              <li>Richiedere la portabilità dei dati;</li>
-              <li>Revocare il consenso in qualsiasi momento senza pregiudizio.</li>
+              <li>Rettificare dati inesatti;</li>
+              <li>Richiedere la cancellazione dei tuoi dati (&quot;diritto all&apos;oblio&quot;);</li>
+              <li>Limitare il trattamento;</li>
+              <li>Portabilità dei dati;</li>
+              <li>Opporti al trattamento.</li>
             </ul>
             <p className="mt-3">
-              Per esercitare questi diritti, scrivi tramite il{" "}
-              <Link href="/contatti" className="text-indigo-600 hover:underline">
-                modulo di contatto
-              </Link>
-              .
+              Per esercitare questi diritti, scrivi a:{" "}
+              <a href="mailto:farigugabriele@gmail.com" className="text-indigo-600 hover:underline">
+                farigugabriele@gmail.com
+              </a>.
             </p>
           </section>
 
           <section>
             <h2 className="text-lg font-bold text-foreground mb-2">
-              7. Cookie
+              8. Sicurezza dei Dati
             </h2>
             <p>
-              Il sito utilizza esclusivamente cookie tecnici necessari al
-              funzionamento (sessione di autenticazione). Non vengono utilizzati
-              cookie di profilazione o di tracciamento di terze parti.
+              Adottiamo misure di sicurezza avanzate, tra cui la crittografia dei dati a riposo (su Supabase) e in transito tramite protocollo HTTPS. L&apos;accesso ai dati sensibili è limitato tramite Row Level Security (RLS) e controlli di autorizzazione server-side.
             </p>
           </section>
 

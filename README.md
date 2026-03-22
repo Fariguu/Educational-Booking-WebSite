@@ -25,46 +25,76 @@ L'obiettivo principale è massimizzare le performance, minimizzare i costi (sfru
 * **Integrazione Dinamica Google Calendar:** In fase di conferma o "salvataggio" di una modifica oraria, generazione dinamica di link Google Calendar.
 * **Email Automatizzate:** Invio di note transazionali automatiche via piattaforma Resend.
 
-## 3. Specifiche Tecniche
+## 3. Struttura del Progetto
 
-* **Struttura Core:** Next.js (App Router, pattern Server Actions)
-* **Lingua / Tipizzazione:** TypeScript
-* **Stile e UI:** Tailwind CSS, componenti Shadcn UI (basati su Radix UI)
-* **Database e Autenticazione:** Supabase (Database PostgreSQL relazionale, Supabase SSR, Auth OTP, regole Row Level Security)
-* **Gestione Email:** Resend Platform via libreria SDK ufficiale
-* **Sicurezza Frontend:** Cloudflare Turnstile CAPTCHA alternativo
-* **Hosting e Misurazioni:** Vercel (Hosting serverless super reattivo, Vercel Analytics globale, Vercel Speed Insights)
-* **Manipolazione Date/Orari:** `date-fns`
+```text
+Sito Prenotazioni/
+├── public/                 # Asset statici
+├── src/
+│   ├── app/                # Next.js App Router (Pagine e Server Actions)
+│   │   ├── [professorId]/  # Pagine dinamiche per docente
+│   │   ├── actions/        # Server Actions (Auth, Booking, Admin, ecc.)
+│   │   ├── admin/          # Dashboard amministrativa
+│   │   ├── auth/           # Gestione autenticazione
+│   │   ├── dashboard/      # Dashboard utente/docente
+│   │   ├── privacy/        # Pagina Privacy Policy
+│   │   ├── layout.tsx      # Layout principale
+│   │   └── page.tsx        # Homepage (Calendario pubblico)
+│   ├── components/         # Componenti React riutilizzabili
+│   │   ├── admin/          # Componenti specifici per l'admin
+│   │   ├── ui/             # Componenti base shadcn/ui
+│   │   ├── auth-modal.tsx  # Modale di autenticazione
+│   │   └── ...
+│   ├── lib/                # Librerie e utility esterne
+│   ├── utils/              # Utility interne e configurazione Supabase
+│   │   └── supabase/       # Client e Server helpers per Supabase
+│   └── middleware.ts       # Middleware di protezione rotte e sessioni
+├── .env.local              # Variabili d'ambiente (non in git)
+├── components.json         # Configurazione shadcn/ui
+├── package.json            # Dipendenze e script
+├── README.md               # Documentazione del progetto
+└── tsconfig.json           # Configurazione TypeScript
+```
 
-## 4. Documentazione Strutturale del Codice
+## 4. Stack Tecnologico
+- **Framework Core**: Next.js 16.1 (App Router) basato su React 19.
+- **Linguaggio**: TypeScript.
+- **Styling & Animazioni**: Tailwind CSS v4 e Framer Motion (per interazioni fluide e modali).
+- **Componenti UI**: *shadcn/ui* (Radix UI).
+- **Database e Autenticazione**: Supabase (PostgreSQL) con Row Level Security (RLS).
+  - **Auth**: Sistema ibrido Email/Password con verifica OTP durante la registrazione e ripristino password.
+- **Gestione Form**: `react-hook-form` con validazione `zod`.
+- **Protezione Anti-Spam**: Cloudflare Turnstile.
+- **Email Transazionali**: Resend SDK (Onboarding, Notifiche Admin, Conferme Prenotazione).
 
-### Il layer di Visualizzazione `src/app/`
-* **`page.tsx` & `layout.tsx`**: Contengono l'Homepage pubblica (frontend studenti). Orchestrano il visualizzatore del calendario asincrono e formattano i dialog di iterazione di prenotazione.
-* **`login/page.tsx`**: La pagina di autenticazione dell'admin. Possiede logiche sia client che chiamate server per interpretare l'erogazione OTP o mettersi in ascolto della validazione utente.
-* **`admin/page.tsx` & `admin/layout.tsx`**: L'area protetta della dashboard (raggiungibile solo in conformità al cookie auth verificato dal Middleware). Qui la navigazione si spezza tramite tab precaricando lato server i blocchi di "lezioni" secondo lo status del record.
+## 5. Documentazione Strutturale del Codice
 
-### Il layer Logico `src/app/actions/` (Next.js Server Actions)
-Moduli cruciali di elaborazione dati e chiamate API interne che sfruttano l'isolamento del backend integrato in Next.
-* **`auth.ts`**: Gestisce l'ingresso. Genera magic link o valuta token manuali OTP numerici (`verifyOtp`).
-* **`booking.ts`**: Modulo che convalida lato server il form student, gestisce l'inserzione tramite RPC per il partizionamento dinamico in "Mega-Slots" (evitando i double-booking in concorrenza) e funge da recettore per `requestReschedule` dal lato studente inviando notifiche al prof.
-* **`admin.ts`**: Controlli logici di amministrazione garantiti. Include script bulk per generazione, routine di accettazione (`confirmLesson`), aggiornamento (`updateLessonTime`) e cancellazione controllata (`cancelLessonWithChoice`), supportando l'invio asincrono di Email Resend e link aggiuntivi per Google Calendar.
+### 5.1 Architettura del Database
+Il sistema utilizza un'architettura **Multi-Tenant (Multi-Docente)**.
 
-### Le componenti `src/components/`
-Scomposizione delle interfacce. L'intricamento principale risiede in `components/admin/`:
-* `admin-tabs.tsx`: Interpreta e formatta tutti i ritorni array delle lezioni catalogandoli utilmente in liste. Contiene bottoni di aggancio interattivi verso l'esecuzione di una Server Action.
-* `create-slot-dialog.tsx`: Modale complesso che gestisce stati per datazioni e reiterazioni temporali in input, normalizzando il formato testuale prima dell'interrogazione dell'ORM di backend.
+- **Tabella `profiles`**: Estende `auth.users` per gestire i ruoli e i metadati utenti (`id`, `email`, `role`, ecc.). Un trigger SQL crea automaticamente un profilo al sign-up.
+- **Tabella `professor_applications`**: Gestisce le richieste degli utenti per diventare docenti.
+- **Tabella `lessons`**: Gestisce gli slot temporali. Include `professor_id` per collegare lo slot a un docente specifico. Supporta il partizionamento dinamico tramite RPC (`split_and_book_slot`).
+- **Tabella `contacts`**: Messaggi inviati tramite il modulo pubblico.
 
-### Moduli Supabase `src/utils/supabase/`
-* **`server.ts` & `client.ts`**: Helper boilerplate forniti secondo le norme correnti Supabase per impiantare il contesto in ambiti client, framework page server o SSR middleware a seconda di come viene invocato.
-* **`middleware.ts`**: Richiamato nel root (`src/middleware.ts`), garantisce refresh del JWT o scarto restrittivo della directory `/admin/*` nel caso in cui un visitatore immetta esplicitamente un percorso privato.
+### 5.2 Server Actions (`src/app/actions/`)
+- **`auth.ts`**: Gestisce `registerWithPassword`, `loginWithPassword`, `resetPassword` e invio email di benvenuto.
+- **`roles.ts`**: Workflow delle candidature (`applyForProfessor`, `approveApplication`, `rejectApplication`).
+- **`booking.ts`**: Gestisce `bookLesson` (validazione Turnstile, RPC split, notifiche).
+- **`admin.ts`**: Creazione slot, conferme, cancellazioni e integrazione Google Calendar.
+- **`contact.ts`**: Invio messaggi di contatto.
 
-### Il Livello Dati (Configurato su Supabase)
-La tabella monolitica `lessons` gestisce lo stato di fatto del tempo prof: uno slot fluisce programmaticamente variando lungo gli stati di record `available` (sola presenza temporale) -> `pending` (arricchito da dati stringa studente) -> `confirmed` / `available` in loop continuo. È protetta a livello RLS.
+### 5.3 Architettura UI & Dashboard
+- **`auth-modal.tsx`**: Modale unificato per Login/Register/Forgot con animazioni Framer Motion.
+- **Dashboard Multi-Livello (`/dashboard`)**:
+  - **Superadmin**: Gestione candidature e messaggi.
+  - **Professor**: Gestione calendario e statistiche.
+  - **Student**: Elenco prenotazioni.
+- **Calendario Pubblico**: Filtra gli slot disponibili (`is_available = true`).
+- **Gestione Prenotazione (`/gestisci/[id]`)**: Permette agli studenti di richiedere reschedule tramite "access token".
 
-### Environment (Costanti)
-La piattaforma richiede token di backend segregati per il service bypass (es. Service Role di supabase) in concomitanza a public ID esportati (`NEXT_PUBLIC_` prefissi). Include le chiavi Cloudflare, API di Resend e configurazioni URL dinamici come `NEXT_PUBLIC_SITE_URL`.
 
-## 5. Analisi Privacy, Sicurezza e Flusso dei Dati
+## 6. Analisi Privacy, Sicurezza e Flusso dei Dati
 
 L'applicazione è stata progettata seguendo il principio del "Privacy by Design" ed è resistente a vulnerabilità comuni, proteggendo i dati degli utenti:
 
