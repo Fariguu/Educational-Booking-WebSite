@@ -37,21 +37,11 @@ export default function ProfessorDashboardView({
         <Card className="bg-gradient-to-br from-indigo-50 to-white border-indigo-100 shadow-sm relative overflow-hidden">
           <div className="absolute top-0 right-0 p-3 flex gap-2">
             <Link 
-              href={`/professori/${user.id}`} 
-              target="_blank"
-              rel="noopener noreferrer"
-              className={buttonVariants({ variant: 'outline', size: 'sm' }) + " bg-white/50 backdrop-blur-sm border-indigo-200 text-indigo-700 hover:bg-indigo-100"}
-              title="Visualizza Profilo Pubblico"
-            >
-              <Eye className="w-3.5 h-3.5 mr-1" />
-              <span className="hidden sm:inline">Visualizza</span>
-            </Link>
-            <Link 
               href="/profile" 
               className={buttonVariants({ variant: 'outline', size: 'sm' }) + " bg-white/50 backdrop-blur-sm border-indigo-200 text-indigo-700 hover:bg-indigo-100 bg-indigo-50"}
             >
-              <Edit3 className="w-3.5 h-3.5 mr-1" />
-              <span className="hidden sm:inline">Modifica</span>
+              <UserCircle className="w-3.5 h-3.5 mr-1" />
+              <span className="hidden sm:inline">Il mio Profilo</span>
             </Link>
           </div>
           <CardContent className="p-5 pt-6 flex gap-4 items-center mt-4">
