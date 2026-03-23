@@ -6,6 +6,9 @@ import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Card, CardContent } from '@/components/ui/card'
 import PublicNavbar from '@/components/public-navbar'
+import { ReviewSection } from '@/components/review-section'
+import { getProfessorReviewsAction } from '@/app/actions/reviews'
+import { Star } from 'lucide-react'
 
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> | { slug: string } }) {
   const resolvedParams = await Promise.resolve(params)
@@ -41,6 +44,13 @@ export default async function ProfessorProfilePage({ params }: { params: Promise
   const { data: { user } } = await supabase.auth.getUser()
   const isOwner = !!user && user.id === professor.id
 
+  // Fetch reviews and stats
+  const { data: reviewsData } = await getProfessorReviewsAction(professor.id)
+  const { data: statsData } = await supabase.rpc('get_professor_reviews_stats', { p_professor_id: professor.id }).maybeSingle()
+  
+  const avgRating = (statsData as any)?.avg_rating || 0
+  const totalReviews = (statsData as any)?.total_reviews || 0
+
   return (
     <div className="min-h-screen bg-background flex flex-col">
       <PublicNavbar />
@@ -64,6 +74,16 @@ export default async function ProfessorProfilePage({ params }: { params: Promise
                 <h1 className="text-3xl md:text-4xl font-extrabold tracking-tight mb-2">
                   {professor.name}
                 </h1>
+
+                {/* Rating badge */}
+                {totalReviews > 0 && (
+                  <div className="flex items-center gap-1.5 mb-3 text-sm font-medium text-amber-600">
+                    <Star className="w-5 h-5 fill-amber-400 text-amber-400" />
+                    <span className="text-lg font-bold text-slate-800">{avgRating}</span>
+                    <span className="text-muted-foreground mr-1">/ 5</span>
+                    <span className="text-muted-foreground">({totalReviews} recension{totalReviews === 1 ? 'e' : 'i'})</span>
+                  </div>
+                )}
 
                 <div className="flex flex-wrap gap-2 mb-4">
                   {professor.subjects?.map((sub: string) => (
@@ -104,6 +124,11 @@ export default async function ProfessorProfilePage({ params }: { params: Promise
               </div>
             </div>
           </div>
+        </section>
+
+        {/* Sezione Recensioni */}
+        <section className="container mx-auto px-4 max-w-4xl pb-16">
+          <ReviewSection professorId={professor.id} reviews={(reviewsData as any[]) || []} user={user} />
         </section>
       </main>
 
