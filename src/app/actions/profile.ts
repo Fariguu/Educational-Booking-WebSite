@@ -49,15 +49,18 @@ export async function updateProfile(formData: z.infer<typeof ProfileUpdateSchema
     .single()
 
   // 3. Sync to role-specific tables (solo campi specializzati!)
-  if (profile?.role === 'professor') {
-    const { error } = await supabase
+  if (profile?.role === 'professor' || profile?.role === 'superadmin') {
+    const { error: syncError } = await supabase
       .from('professors')
       .update({
         teaching_subjects: subjects || []
       })
       .eq('id', user.id)
     
-    if (error) console.error("Error syncing to professors:", error)
+    if (syncError) {
+       console.error("Error syncing to professors:", syncError)
+       return { error: "Profilo base salvato, ma errore durante l'aggiornamento delle materie. Verifica i permessi database." }
+    }
   }
   // La tabella students non riceve più dati duplicati dal profilo, 
   // quindi non serve alcun update per gli studenti!
