@@ -64,10 +64,11 @@ export default async function DashboardPage() {
       return <AdminDashboardView user={user} professors={professors || []} students={students || []} />
     }
     case 'professor': {
-      const [{ data: lessons }, { data: studentsHours }, { data: contactMessages }] = await Promise.all([
+      const [{ data: lessons }, { data: studentsHours }, { data: contactMessages }, { data: profData }] = await Promise.all([
         supabase.from('lessons').select('*').eq('professor_id', user.id).order('start_time', { ascending: true }),
         supabase.rpc('get_professor_student_hours', { p_professor_id: user.id, p_year: new Date().getFullYear(), p_month: new Date().getMonth() + 1 }),
-        getContactMessages(user.id)
+        getContactMessages(user.id),
+        supabase.from('professors').select('*').eq('id', user.id).single()
       ])
       
       return (
@@ -76,6 +77,7 @@ export default async function DashboardPage() {
           lessons={lessons || []} 
           studentsHours={studentsHours || []} 
           contactMessages={contactMessages || []}
+          profData={profData || {}}
         />
       )
     }
