@@ -16,17 +16,24 @@ export default async function ContattiPage({ params }: { params: Promise<{ slug:
   const resolvedParams = await Promise.resolve(params);
   const slug = resolvedParams.slug;
 
-  // Risolvi slug → UUID
+  // Risolvi slug → UUID (con join su profiles per il nome)
   const supabase = await createClient();
-  const { data: professor } = await supabase
+  const { data: profData } = await supabase
     .from('professors')
-    .select('id, name, slug')
+    .select('id, slug, profiles!inner(first_name, last_name)')
     .eq('slug', slug)
     .single();
 
-  if (!professor) {
+  if (!profData) {
     notFound();
   }
+
+  const profile = (profData as any).profiles;
+  const professor = {
+    id: profData.id,
+    slug: profData.slug,
+    name: profile ? `${profile.first_name || ''} ${profile.last_name || ''}`.trim() : 'Docente'
+  };
 
   return (
     <main className="min-h-screen bg-background">
