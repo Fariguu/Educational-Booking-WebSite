@@ -15,13 +15,16 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
   const supabase = await createClient()
   const { data: prof } = await supabase
     .from('professors')
-    .select('name, bio')
+    .select('profiles!inner(first_name, last_name, bio)')
     .eq('slug', resolvedParams.slug)
     .single()
   
+  const profile = (prof as any)?.profiles
+  const name = profile ? `${profile.first_name} ${profile.last_name || ''}`.trim() : 'Docente'
+  
   return {
-    title: prof ? `${prof.name} – Profilo Docente` : 'Docente non trovato',
-    description: prof?.bio || 'Consulta il profilo del docente e prenota una lezione.',
+    title: prof ? `${name} – Profilo Docente` : 'Docente non trovato',
+    description: profile?.bio || 'Consulta il profilo del docente e prenota una lezione.',
   }
 }
 
@@ -30,14 +33,24 @@ export default async function ProfessorProfilePage({ params }: { params: Promise
   const slug = resolvedParams.slug
 
   const supabase = await createClient()
-  const { data: professor, error } = await supabase
+  const { data: profRecord, error } = await supabase
     .from('professors')
-    .select('id, name, bio, subjects, slug')
+    .select('*, profiles!inner(first_name, last_name, bio, avatar_url)')
     .eq('slug', slug)
     .single()
 
-  if (!professor || error) {
+  if (!profRecord || error) {
     notFound()
+  }
+
+  const p = (profRecord as any).profiles
+  const professor = {
+    id: profRecord.id,
+    slug: profRecord.slug,
+    subjects: profRecord.teaching_subjects || (profRecord as any).subjects || [],
+    name: p ? `${p.first_name || ''} ${p.last_name || ''}`.trim() : 'Docente',
+    bio: p?.bio,
+    avatar_url: p?.avatar_url
   }
 
   // Check if the currently logged-in user is the owner of this profile

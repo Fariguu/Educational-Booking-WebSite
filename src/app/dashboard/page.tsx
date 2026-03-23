@@ -58,40 +58,69 @@ export default async function DashboardPage() {
     }
     case 'admin': {
       const [{ data: professors }, { data: students }] = await Promise.all([
-        supabase.from('professors').select('*').order('name', { ascending: true }),
-        supabase.from('profiles').select('*').eq('role', 'user').order('created_at', { ascending: false })
+        supabase.from('professors').select('*, profiles!inner(*)'),
+        supabase.from('profiles').select('*').in('role', ['user', 'student']).order('created_at', { ascending: false })
       ])
-      return <AdminDashboardView user={user} professors={professors || []} students={students || []} />
+      
+      const mappedProfessors = professors?.map((p: any) => ({
+         ...p,
+         name: `${p.profiles?.first_name} ${p.profiles?.last_name || ''}`.trim(),
+         email: p.profiles?.email,
+         phone: p.profiles?.phone,
+         subjects: p.teaching_subjects
+      })).sort((a: any, b: any) => a.name.localeCompare(b.name)) || []
+
+      return <AdminDashboardView user={user} professors={mappedProfessors} students={students || []} />
     }
     case 'professor': {
       const [{ data: lessons }, { data: studentsHours }, { data: contactMessages }, { data: profData }] = await Promise.all([
-        supabase.from('lessons').select('*').eq('professor_id', user.id).order('start_time', { ascending: true }),
+        supabase.from('lessons').select('*, students(profiles(first_name, last_name, email))').eq('professor_id', user.id).order('start_time', { ascending: true }),
         supabase.rpc('get_professor_student_hours', { p_professor_id: user.id, p_year: new Date().getFullYear(), p_month: new Date().getMonth() + 1 }),
         getContactMessages(user.id),
-        supabase.from('professors').select('*').eq('id', user.id).single()
+        supabase.from('professors').select('*, profiles!inner(*)').eq('id', user.id).single()
       ])
       
+      const mappedLessons = lessons?.map((l: any) => ({
+        ...l,
+        student_name: l.students?.profiles ? `${l.students.profiles.first_name} ${l.students.profiles.last_name || ''}`.trim() : null,
+        student_contact: l.students?.profiles?.email || null
+      })) || []
+
+      const pData = profData ? {
+        ...profData,
+        name: `${profData.profiles?.first_name} ${profData.profiles?.last_name || ''}`.trim(),
+        bio: profData.profiles?.bio,
+        subjects: profData.teaching_subjects
+      } : {}
+
       return (
         <ProfessorDashboardView 
           user={user} 
-          lessons={lessons || []} 
+          lessons={mappedLessons} 
           studentsHours={studentsHours || []} 
           contactMessages={contactMessages || []}
-          profData={profData || {}}
+          profData={pData}
         />
       )
     }
     case 'student':
     case 'user': {
       const [{ data: followedProfessors }, { data: hoursData }] = await Promise.all([
-        supabase.from('lessons').select('professor_id, professors(*)').eq('student_id', user.id).eq('status', 'confirmed'),
+        supabase.from('lessons').select('professor_id, professors(*, profiles!inner(first_name, last_name, email, avatar_url))').eq('student_id', user.id).eq('status', 'confirmed'),
         supabase.rpc('get_monthly_hours', { p_user_id: user.id, p_year: new Date().getFullYear(), p_month: new Date().getMonth() + 1 })
       ])
 
       // Filtra professori unici
-      const uniqueProfs = Array.from(new Set((followedProfessors || []).map(p => p.professor_id))).map(id => {
-        return (followedProfessors || []).find(p => p.professor_id === id)?.professors
-      })
+      const uniqueProfs = Array.from(new Set((followedProfessors || []).map((p: any) => p.professor_id))).map(id => {
+        const prof = (followedProfessors || []).find((p: any) => p.professor_id === id)?.professors as any
+        if (!prof) return null;
+        return {
+           ...prof,
+           name: `${prof.profiles?.first_name} ${prof.profiles?.last_name || ''}`.trim(),
+           email: prof.profiles?.email,
+           avatar_url: prof.profiles?.avatar_url
+        }
+      }).filter(Boolean)
 
       return (
         <StudentDashboardView 

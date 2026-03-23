@@ -68,14 +68,23 @@ export async function registerWithPassword(formData: z.infer<typeof AuthSchema>)
     return { error: "Email già registrata. Prova ad accedere." }
   }
 
-  // Save firstName and phone to profiles (created by DB trigger)
-  if (data?.user?.id && (validated.data.firstName || validated.data.phone)) {
+  // Save name parts, phone and email to profiles (created by DB trigger)
+  if (data?.user?.id) {
     const { createAdminClient } = await import('@/utils/supabase/server')
     const adminClient = await createAdminClient()
+    
+    // Gestione Nomi/Cognomi in base al nuovo schema
+    const fullName = validated.data.firstName || '';
+    const nameParts = fullName.trim().split(' ');
+    const firstName = nameParts[0] || null;
+    const lastName = nameParts.length > 1 ? nameParts.slice(1).join(' ') : null;
+
     await adminClient
       .from('profiles')
       .update({
-        ...(validated.data.firstName ? { first_name: validated.data.firstName } : {}),
+        email: validated.data.email,
+        ...(firstName ? { first_name: firstName } : {}),
+        ...(lastName ? { last_name: lastName } : {}),
         ...(validated.data.phone ? { phone: validated.data.phone } : {}),
       })
       .eq('id', data.user.id)

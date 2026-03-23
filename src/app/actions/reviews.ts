@@ -59,9 +59,11 @@ export async function getProfessorReviewsAction(professorId: string) {
       rating,
       comment,
       created_at,
-      profiles:student_id (
-        first_name,
-        last_name
+      students:student_id (
+        profiles (
+          first_name,
+          last_name
+        )
       )
     `)
     .eq('professor_id', professorId)
@@ -72,5 +74,11 @@ export async function getProfessorReviewsAction(professorId: string) {
     return { data: [], error: error.message }
   }
 
-  return { data: data || [], error: null }
+  // Flattening to keep frontend compatibility
+  const formattedData = data?.map((r: any) => ({
+    ...r,
+    profiles: r.students?.profiles || { first_name: 'Anonimo', last_name: null }
+  }))
+
+  return { data: formattedData || [], error: null }
 }

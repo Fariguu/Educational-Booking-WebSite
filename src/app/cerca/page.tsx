@@ -19,15 +19,10 @@ export default async function SearchResultsPage({ searchParams }: { searchParams
   
   let professors = []
   
-  if (q) {
-    // Chiama la nuova funzione PostgreSQL per la ricerca fuzzy su array e testo
-    const { data } = await supabase.rpc('search_professors', { search_query: q })
-    professors = data || []
-  } else {
-    // Ritorna le occorrenze di default se la query è vuota
-    const { data } = await supabase.from('professors').select('*').order('name', { ascending: true })
-    professors = data || []
-  }
+  // Sempre usa l'RPC per consistenza, garantendo che i nomi e le materie siano mappati correttamente.
+  const { data } = await supabase.rpc('search_professors', { search_query: q || "" })
+  professors = data || []
+
 
   // Recuperiamo le recensioni per calcolare il rating e ordinare i risultati
   const { data: allReviews } = await supabase.from('reviews').select('professor_id, rating')
