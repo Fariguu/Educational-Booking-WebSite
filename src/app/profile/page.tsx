@@ -1,6 +1,8 @@
 import { createClient } from '@/utils/supabase/server'
 import { redirect } from 'next/navigation'
 import ProfileForm from '@/components/profile-form'
+import Link from 'next/link'
+import { ArrowLeft } from 'lucide-react'
 
 export default async function ProfilePage() {
   const supabase = await createClient()
@@ -31,7 +33,11 @@ export default async function ProfilePage() {
 
   return (
     <div className="container mx-auto py-10 px-4 max-w-4xl">
-      <div className="mb-8">
+      <div className="mb-6">
+        <Link href="/dashboard" className="inline-flex items-center text-sm font-medium text-indigo-600 hover:text-indigo-800 transition-colors mb-4">
+          <ArrowLeft className="w-4 h-4 mr-2" />
+          Torna alla Dashboard
+        </Link>
         <h1 className="text-3xl font-extrabold tracking-tight">Il Tuo Profilo</h1>
         <p className="text-muted-foreground mt-2">Gestisci i tuoi dati personali e le informazioni che verranno mostrate pubblicamente.</p>
       </div>

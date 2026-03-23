@@ -177,7 +177,9 @@ export default function SuperadminDashboard({
                         </Label>
                         {app.email ? (
                           <a
-                            href={`mailto:${app.email}?subject=Riguardo la tua candidatura`}
+                            href={`https://mail.google.com/mail/?view=cm&fs=1&to=${app.email}&su=${encodeURIComponent("Riguardo la tua candidatura")}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
                             className={buttonVariants({ variant: 'outline', size: 'sm' }) + " w-full"}
                           >
                             <Mail className="w-3 h-3 mr-1.5" />
@@ -260,7 +262,9 @@ export default function SuperadminDashboard({
                   </CardContent>
                   <CardFooter className="bg-muted/5 py-2 px-4 border-t flex justify-end">
                     <a 
-                      href={`mailto:${msg.email}`}
+                      href={`https://mail.google.com/mail/?view=cm&fs=1&to=${msg.email}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
                       className={buttonVariants({ variant: 'link', size: 'sm' }) + " text-indigo-600 p-0 h-auto"}
                     >
                       Rispondi via Email
