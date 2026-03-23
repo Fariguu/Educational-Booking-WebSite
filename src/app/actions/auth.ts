@@ -10,7 +10,7 @@ const resend = process.env.RESEND_API_KEY && process.env.RESEND_API_KEY !== 're_
 
 const AuthSchema = z.object({
   email: z.string().email("Inserisci un indirizzo email valido"),
-  password: z.string().min(6, "La password deve contenere almeno 6 caratteri"),
+  password: z.string().min(8, "La password deve contenere almeno 8 caratteri").regex(/^(?=.*[a-z])(?=.*[A-Z])(?=.*[\d\W]).{8,}$/, "La password deve contenere almeno 1 maiuscola, 1 minuscola e 1 numero o carattere speciale"),
   firstName: z.string().min(1).optional(),
   phone: z.string().optional(),
 })
@@ -19,7 +19,7 @@ export async function loginWithPassword(formData: z.infer<typeof AuthSchema>) {
   const validated = AuthSchema.safeParse(formData)
   
   if (!validated.success) {
-    return { error: validated.error.issues[0].message }
+    return { error: "Email o password errata." }
   }
 
   const supabase = await createClient()
@@ -30,7 +30,7 @@ export async function loginWithPassword(formData: z.infer<typeof AuthSchema>) {
   })
 
   if (error) {
-    return { error: error.message }
+    return { error: "Email o password errata." }
   }
 
   return { success: true }
@@ -44,6 +44,15 @@ export async function registerWithPassword(formData: z.infer<typeof AuthSchema>)
   }
 
   const supabase = await createClient()
+
+  if (validated.data.phone) {
+    const { createAdminClient } = await import('@/utils/supabase/server')
+    const adminClient = await createAdminClient()
+    const { data: existingPhone } = await adminClient.from('profiles').select('id').eq('phone', validated.data.phone).maybeSingle()
+    if (existingPhone) {
+      return { error: "Questo numero di telefono è già associato ad un altro account." }
+    }
+  }
 
   const { error, data } = await supabase.auth.signUp({
     email: validated.data.email,
@@ -59,14 +68,23 @@ export async function registerWithPassword(formData: z.infer<typeof AuthSchema>)
     return { error: "Email già registrata. Prova ad accedere." }
   }
 
-  // Save firstName and phone to profiles (created by DB trigger)
-  if (data?.user?.id && (validated.data.firstName || validated.data.phone)) {
+  // Save name parts, phone and email to profiles (created by DB trigger)
+  if (data?.user?.id) {
     const { createAdminClient } = await import('@/utils/supabase/server')
     const adminClient = await createAdminClient()
+    
+    // Gestione Nomi/Cognomi in base al nuovo schema
+    const fullName = validated.data.firstName || '';
+    const nameParts = fullName.trim().split(' ');
+    const firstName = nameParts[0] || null;
+    const lastName = nameParts.length > 1 ? nameParts.slice(1).join(' ') : null;
+
     await adminClient
       .from('profiles')
       .update({
-        ...(validated.data.firstName ? { first_name: validated.data.firstName } : {}),
+        email: validated.data.email,
+        ...(firstName ? { first_name: firstName } : {}),
+        ...(lastName ? { last_name: lastName } : {}),
         ...(validated.data.phone ? { phone: validated.data.phone } : {}),
       })
       .eq('id', data.user.id)

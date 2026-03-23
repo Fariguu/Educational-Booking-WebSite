@@ -24,7 +24,7 @@ export async function updateProfile(formData: z.infer<typeof ProfileUpdateSchema
 
   const { firstName, lastName, bio, phone, publicEmail, subjects } = validated.data
 
-  // 1. Update Profile as individual fields
+  // 1. Update Profile (unica fonte di verità per l'anagrafica)
   const { error: profileError } = await supabase
     .from('profiles')
     .update({
@@ -32,7 +32,7 @@ export async function updateProfile(formData: z.infer<typeof ProfileUpdateSchema
       last_name: lastName,
       bio: bio,
       phone: phone,
-      teaching_subjects: subjects || [],
+      email: publicEmail || user.email, // Usa l'email fornita dal form o l'originale
       updated_at: new Date().toISOString()
     })
     .eq('id', user.id)
@@ -41,41 +41,29 @@ export async function updateProfile(formData: z.infer<typeof ProfileUpdateSchema
     return { error: "Errore durante l'aggiornamento del profilo." }
   }
 
-  // 2. Fetch current role to see where else to sync
+  // 2. Fetch current role to see where else to sync specialized fields
   const { data: profile } = await supabase
     .from('profiles')
     .select('role')
     .eq('id', user.id)
     .single()
 
-  // 3. Sync to role-specific tables
-  if (profile?.role === 'professor') {
-    const { error } = await supabase
+  // 3. Sync to role-specific tables (solo campi specializzati!)
+  if (profile?.role === 'professor' || profile?.role === 'superadmin') {
+    const { error: syncError } = await supabase
       .from('professors')
       .update({
-        name: `${firstName} ${lastName}`,
-        bio: bio,
-        phone: phone,
-        email: publicEmail || user.email,
-        subjects: subjects || []
+        teaching_subjects: subjects || []
       })
       .eq('id', user.id)
     
-    if (error) console.error("Error syncing to professors:", error)
-  } else if (profile?.role === 'user' || profile?.role === 'student') {
-     const { error } = await supabase
-      .from('students')
-      .update({
-        first_name: firstName,
-        last_name: lastName,
-        bio: bio,
-        phone: phone,
-        email: publicEmail || user.email
-      })
-      .eq('id', user.id)
-    
-    if (error) console.error("Error syncing to students:", error)
+    if (syncError) {
+       console.error("Error syncing to professors:", syncError)
+       return { error: `Errore durante l'aggiornamento delle materie: ${syncError.message}` }
+    }
   }
+  // La tabella students non riceve più dati duplicati dal profilo, 
+  // quindi non serve alcun update per gli studenti!
 
   revalidatePath('/profile')
   revalidatePath('/dashboard')

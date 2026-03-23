@@ -44,7 +44,7 @@ export default function ProfileForm({
       bio: profile.bio || roleData.bio || '',
       phone: profile.phone || roleData.phone || '',
       publicEmail: roleData.email || '',
-      subjects: profile.teaching_subjects?.join(', ') || roleData.subjects?.join(', ') || ''
+      subjects: roleData.teaching_subjects?.join(', ') || ''
     }
   })
 

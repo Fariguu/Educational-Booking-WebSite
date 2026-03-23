@@ -1,5 +1,5 @@
 import Link from 'next/link'
-import { BookOpen, Search, ArrowRight } from 'lucide-react'
+import { BookOpen, Search, ArrowRight, Star } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import PublicNavbar from '@/components/public-navbar'
@@ -19,15 +19,34 @@ export default async function SearchResultsPage({ searchParams }: { searchParams
   
   let professors = []
   
-  if (q) {
-    // Chiama la nuova funzione PostgreSQL per la ricerca fuzzy su array e testo
-    const { data } = await supabase.rpc('search_professors', { search_query: q })
-    professors = data || []
-  } else {
-    // Ritorna le occorrenze di default se la query è vuota
-    const { data } = await supabase.from('professors').select('*').order('name', { ascending: true })
-    professors = data || []
-  }
+  // Sempre usa l'RPC per consistenza, garantendo che i nomi e le materie siano mappati correttamente.
+  const { data } = await supabase.rpc('search_professors', { search_query: q || "" })
+  professors = data || []
+
+
+  // Recuperiamo le recensioni per calcolare il rating e ordinare i risultati
+  const { data: allReviews } = await supabase.from('reviews').select('professor_id, rating')
+  
+  const profStats = allReviews?.reduce((acc: any, review: any) => {
+    if (!acc[review.professor_id]) acc[review.professor_id] = { total: 0, sum: 0 }
+    acc[review.professor_id].total += 1
+    acc[review.professor_id].sum += review.rating
+    return acc
+  }, {}) || {}
+
+  professors = professors.map((prof: any) => {
+    const stats = profStats[prof.id]
+    return {
+      ...prof,
+      avgRating: stats ? (stats.sum / stats.total).toFixed(1) : parseFloat("0").toFixed(1),
+      totalReviews: stats ? stats.total : 0
+    }
+  }).sort((a: any, b: any) => {
+    if (Number(b.avgRating) !== Number(a.avgRating)) {
+      return Number(b.avgRating) - Number(a.avgRating)
+    }
+    return b.totalReviews - a.totalReviews
+  })
 
   return (
     <div className="min-h-screen bg-background flex flex-col">
@@ -68,7 +87,16 @@ export default async function SearchResultsPage({ searchParams }: { searchParams
                     </div>
                     <div>
                       <h3 className="font-semibold inset-0 text-lg group-hover:text-indigo-600 transition-colors">{prof.name}</h3>
-                      <div className="flex flex-wrap gap-1 mt-1">
+                      
+                      {/* Stelle */}
+                      {prof.totalReviews > 0 && (
+                        <div className="flex items-center gap-1 mt-0.5 text-xs font-medium text-amber-600">
+                          <Star className="w-3.5 h-3.5 fill-amber-400 text-amber-400" />
+                          <span>{prof.avgRating} ({prof.totalReviews})</span>
+                        </div>
+                      )}
+
+                      <div className="flex flex-wrap gap-1 mt-1.5">
                         {prof.subjects?.map((sub: string) => (
                            <Badge key={sub} variant="secondary" className="text-[10px] px-1.5 py-0">{sub}</Badge>
                         ))}

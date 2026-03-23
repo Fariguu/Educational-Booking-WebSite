@@ -21,8 +21,10 @@ export default function UpdatePasswordForm() {
     e.preventDefault()
     setErrorMsg(null)
 
-    if (password.length < 6) {
-      setErrorMsg("La password deve contenere almeno 6 caratteri.")
+    const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*[\d\W]).{8,}$/
+
+    if (!passwordRegex.test(password)) {
+      setErrorMsg("Minimo 8 caratteri, almeno 1 maiuscola, 1 minuscola e 1 numero o carattere speciale.")
       return
     }
 

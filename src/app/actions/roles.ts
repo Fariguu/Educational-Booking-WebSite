@@ -113,10 +113,54 @@ export async function approveApplication(userId: string) {
   }
 
   const adminClient = await createAdminClient()
-  const { data, error } = await adminClient.rpc('approve_professor_application', { p_user_id: userId })
   
-  if (error) return { error: error.message }
-  if (data && !data.success) return { error: data.error || 'Errore sconosciuto' }
+  // 1. Recupera la candidatura
+  const { data: application, error: appError } = await adminClient
+    .from('professor_applications')
+    .select('*')
+    .eq('id', userId)
+    .single()
+    
+  if (appError || !application) return { error: "Candidatura non trovata" }
+  
+  // 2. Aggiorna il profilo centralizzato
+  const nameParts = (application.full_name || '').trim().split(' ');
+  const firstName = nameParts[0] || '';
+  const lastName = nameParts.length > 1 ? nameParts.slice(1).join(' ') : null;
+  
+  // Genera uno slug semplice
+  let baseSlug = application.full_name
+    ? application.full_name.toLowerCase().trim().replace(/[^a-z0-9]+/g, '-')
+    : `prof-${userId.substring(0, 6)}`
+    
+  const randomSuffix = Math.floor(Math.random() * 1000).toString().padStart(3, '0')
+  const slug = `${baseSlug}-${randomSuffix}`
+
+  const { error: profileError } = await adminClient
+    .from('profiles')
+    .update({ 
+       role: 'professor',
+       first_name: firstName,
+       last_name: lastName,
+       bio: application.bio
+    })
+    .eq('id', userId)
+    
+  if (profileError) return { error: "Errore durante l'aggiornamento del profilo auth" }
+  
+  // 3. Inserisci il professore specializzato
+  const { error: profError } = await adminClient
+    .from('professors')
+    .insert({
+      id: userId,
+      slug: slug,
+      teaching_subjects: application.subjects
+    })
+
+  if (profError) return { error: "Errore durante la creazione del record professore" }
+  
+  // 4. Elimina la candidatura completata
+  await adminClient.from('professor_applications').delete().eq('id', userId)
   
   return { success: true }
 }

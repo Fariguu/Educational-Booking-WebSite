@@ -64,25 +64,25 @@ export async function bookLesson(formData: z.infer<typeof BookingSchema>) {
       return { error: "Errore durante la verifica anti-spam." }
     }
 
-    // 3. Update Supabase tramite RPC per partizionamento atomico (Mega-Slot)
+    // 3. Verifica Utente e prenotazione
     const supabase = await createAdminClient()
+    const { data: { user } } = await supabase.auth.getUser()
     
-    let finalStudentId = studentId || null
-    if (finalStudentId) {
-      // Verifica se lo studente esiste nella tabella "students" per evitare errori FK
-      // Nota: in questa versione del DB, lessons.student_id punta a students.id, non a profiles.id
-      const { data: studentRecord } = await supabase.from('students').select('id').eq('id', finalStudentId).single()
-      if (!studentRecord) {
-        finalStudentId = null
-      }
+    let finalStudentId = user?.id || studentId
+    if (!finalStudentId) {
+       return { error: "Devi effettuare l'accesso per prenotare una lezione." }
+    }
+
+    // Assicuriamoci che l'utente esista come studente (se non esiste, lo creiamo)
+    const { data: studentRecord } = await supabase.from('students').select('id').eq('id', finalStudentId).single()
+    if (!studentRecord) {
+       await supabase.from('students').insert({ id: finalStudentId })
     }
 
     const { data: result, error: rpcError } = await supabase.rpc('split_and_book_slot', {
         p_slot_id: slotId,
         p_req_start: requestedStartTime,
         p_req_end: requestedEndTime,
-        p_name: studentName,
-        p_email: studentContact,
         p_notes: notes || null,
         p_student_id: finalStudentId
     })
@@ -103,11 +103,16 @@ export async function bookLesson(formData: z.infer<typeof BookingSchema>) {
       const manageUrl = `${siteUrl}/gestisci/${slotId}`
       
       try {
+        // Get the student's email from profiles since we dropped student_contact
+        const { data: studentProfile } = await supabase.from('profiles').select('email, first_name').eq('id', finalStudentId).single()
+        const studentEmail = studentProfile?.email || studentContact
+        const studentFirstName = studentProfile?.first_name || studentName
+        
         await resend.emails.send({
           from: fromEmail,
-          to: studentContact,
+          to: studentEmail,
           subject: 'Conferma Richiesta Prenotazione',
-          html: `<p>Ciao <strong>${studentName}</strong>,</p>
+          html: `<p>Ciao <strong>${studentFirstName}</strong>,</p>
                  <p>Abbiamo ricevuto la tua richiesta di prenotazione per la lezione (Orario: ${new Date(requestedStartTime).toLocaleTimeString('it-IT', {hour: '2-digit', minute:'2-digit'})} - ${new Date(requestedEndTime).toLocaleTimeString('it-IT', {hour: '2-digit', minute:'2-digit'})}).</p>
                  <p>Riceverai un'email definitiva non appena il professore avrà visionato la richiesta.</p>
                  <hr />
@@ -153,9 +158,17 @@ export async function requestReschedule(formData: z.infer<typeof RescheduleSchem
 
   const supabase = await createAdminClient()
 
-  const { data: lesson, error: fetchError } = await supabase.from('lessons').select('*').eq('id', slotId).single()
+  const { data: lesson, error: fetchError } = await supabase
+    .from('lessons')
+    .select('*, students(profiles(first_name, last_name))')
+    .eq('id', slotId)
+    .single()
   
   if (fetchError || !lesson) return { error: "Lezione non trovata." }
+  
+  const studentNameDisplay = (lesson.students as any)?.profiles?.first_name 
+    ? `${(lesson.students as any).profiles.first_name} ${(lesson.students as any).profiles.last_name || ''}` 
+    : 'Uno studente';
 
   const { error: updateError } = await supabase
     .from('lessons')
@@ -182,10 +195,10 @@ export async function requestReschedule(formData: z.infer<typeof RescheduleSchem
       await resend.emails.send({
         from: fromEmail,
         to: adminEmail,
-        subject: `⚠️ Richiesta Reschedule da ${lesson.student_name}`,
+        subject: `⚠️ Richiesta Reschedule da ${studentNameDisplay}`,
         html: `
           <h3>Richiesta di Spostamento Lezione</h3>
-          <p>Lo studente <strong>${lesson.student_name}</strong> ha richiesto di spostare la lezione prevista per il ${new Date(lesson.start_time).toLocaleString('it-IT')}.</p>
+          <p>Lo studente <strong>${studentNameDisplay}</strong> ha richiesto di spostare la lezione prevista per il ${new Date(lesson.start_time).toLocaleString('it-IT')}.</p>
           <p><strong>Motivazione:</strong></p>
           <blockquote style="background: #f1f5f9; padding: 12px; border-left: 4px solid #94a3b8; font-style: italic;">
             ${notes}

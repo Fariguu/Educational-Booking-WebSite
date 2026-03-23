@@ -13,9 +13,11 @@ import { Button } from '@/components/ui/button'
 import { Label } from '@/components/ui/label'
 import { loginWithPassword, registerWithPassword, resetPasswordAction } from '@/app/actions/auth'
 
+const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*[\d\W]).{8,}$/
+
 const schema = z.object({
-  email: z.string().email("Email non valida"),
-  password: z.string().min(6, "Minimo 6 caratteri").optional().or(z.literal('')),
+  email: z.string().email("Inserisci un indirizzo email valido"),
+  password: z.string().min(8, "Minimo 8 caratteri").regex(passwordRegex, "Almeno 1 maiuscola, 1 minuscola e 1 numero o carattere speciale").optional().or(z.literal('')),
   firstName: z.string().min(2, "Inserisci il tuo nome").optional().or(z.literal('')),
   phone: z.string().regex(/^[+]?[0-9\s\-()]{7,}$/, "Numero di telefono non valido").optional().or(z.literal('')),
 })
@@ -93,8 +95,8 @@ export default function AuthModal() {
   }
 
   const onSubmit = async (data: AuthParams) => {
-    if (!isForgot && (!data.password || data.password.length < 6)) {
-      setErrorMsg("La password è obbligatoria e deve contenere almeno 6 caratteri.")
+    if (!isForgot && (!data.password || data.password.length < 8)) {
+      setErrorMsg("La password è obbligatoria e deve contenere almeno 8 caratteri.")
       return
     }
     
@@ -112,7 +114,7 @@ export default function AuthModal() {
       } else if (isLogin) {
         const res = await loginWithPassword({ email: data.email, password: data.password! })
         if (res.error) {
-          setErrorMsg(res.error)
+          setErrorMsg("Email o password errata.")
         } else {
           toast.success("Accesso effettuato")
           closeMenu()
@@ -121,7 +123,7 @@ export default function AuthModal() {
       } else {
         const res = await registerWithPassword({ email: data.email, password: data.password! }) as any
         if (res.error) {
-          setErrorMsg(res.error)
+          setErrorMsg(res.error) // Supabase returns descriptive errors like "User already registered" or we map them in the action
         } else {
           if (res.message) {
             // OTP / email confirmation required
@@ -275,6 +277,12 @@ export default function AuthModal() {
                                       />
                                   </div>
                                   {errors.password && <p className="text-xs text-destructive">{errors.password.message}</p>}
+                                  {!isLogin && (
+                                    <p className="text-[10px] text-muted-foreground italic leading-tight mt-1">
+                                      Min 8 caratteri (1 maiuscola, 1 minuscola, 1 numero o spec.).<br/>
+                                      <strong className="text-amber-600 font-medium">Avviso:</strong> Ricordati di non inserire una password che hai già utilizzato su altri siti.
+                                    </p>
+                                  )}
                               </div>
                             )}
 

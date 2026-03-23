@@ -6,19 +6,25 @@ import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Card, CardContent } from '@/components/ui/card'
 import PublicNavbar from '@/components/public-navbar'
+import { ReviewSection } from '@/components/review-section'
+import { getProfessorReviewsAction } from '@/app/actions/reviews'
+import { Star } from 'lucide-react'
 
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> | { slug: string } }) {
   const resolvedParams = await Promise.resolve(params)
   const supabase = await createClient()
   const { data: prof } = await supabase
     .from('professors')
-    .select('name, bio')
+    .select('profiles!inner(first_name, last_name, bio)')
     .eq('slug', resolvedParams.slug)
     .single()
   
+  const profile = (prof as any)?.profiles
+  const name = profile ? `${profile.first_name} ${profile.last_name || ''}`.trim() : 'Docente'
+  
   return {
-    title: prof ? `${prof.name} – Profilo Docente` : 'Docente non trovato',
-    description: prof?.bio || 'Consulta il profilo del docente e prenota una lezione.',
+    title: prof ? `${name} – Profilo Docente` : 'Docente non trovato',
+    description: profile?.bio || 'Consulta il profilo del docente e prenota una lezione.',
   }
 }
 
@@ -27,19 +33,36 @@ export default async function ProfessorProfilePage({ params }: { params: Promise
   const slug = resolvedParams.slug
 
   const supabase = await createClient()
-  const { data: professor, error } = await supabase
+  const { data: profRecord, error } = await supabase
     .from('professors')
-    .select('id, name, bio, subjects, slug')
+    .select('*, profiles!inner(first_name, last_name, bio, avatar_url)')
     .eq('slug', slug)
     .single()
 
-  if (!professor || error) {
+  if (!profRecord || error) {
     notFound()
+  }
+
+  const p = (profRecord as any).profiles
+  const professor = {
+    id: profRecord.id,
+    slug: profRecord.slug,
+    subjects: profRecord.teaching_subjects || (profRecord as any).subjects || [],
+    name: p ? `${p.first_name || ''} ${p.last_name || ''}`.trim() : 'Docente',
+    bio: p?.bio,
+    avatar_url: p?.avatar_url
   }
 
   // Check if the currently logged-in user is the owner of this profile
   const { data: { user } } = await supabase.auth.getUser()
   const isOwner = !!user && user.id === professor.id
+
+  // Fetch reviews and stats
+  const { data: reviewsData } = await getProfessorReviewsAction(professor.id)
+  const { data: statsData } = await supabase.rpc('get_professor_reviews_stats', { p_professor_id: professor.id }).maybeSingle()
+  
+  const avgRating = (statsData as any)?.avg_rating || 0
+  const totalReviews = (statsData as any)?.total_reviews || 0
 
   return (
     <div className="min-h-screen bg-background flex flex-col">
@@ -64,6 +87,16 @@ export default async function ProfessorProfilePage({ params }: { params: Promise
                 <h1 className="text-3xl md:text-4xl font-extrabold tracking-tight mb-2">
                   {professor.name}
                 </h1>
+
+                {/* Rating badge */}
+                {totalReviews > 0 && (
+                  <div className="flex items-center gap-1.5 mb-3 text-sm font-medium text-amber-600">
+                    <Star className="w-5 h-5 fill-amber-400 text-amber-400" />
+                    <span className="text-lg font-bold text-slate-800">{avgRating}</span>
+                    <span className="text-muted-foreground mr-1">/ 5</span>
+                    <span className="text-muted-foreground">({totalReviews} recension{totalReviews === 1 ? 'e' : 'i'})</span>
+                  </div>
+                )}
 
                 <div className="flex flex-wrap gap-2 mb-4">
                   {professor.subjects?.map((sub: string) => (
@@ -104,6 +137,11 @@ export default async function ProfessorProfilePage({ params }: { params: Promise
               </div>
             </div>
           </div>
+        </section>
+
+        {/* Sezione Recensioni */}
+        <section className="container mx-auto px-4 max-w-4xl pb-16">
+          <ReviewSection professorId={professor.id} reviews={(reviewsData as any[]) || []} user={user} />
         </section>
       </main>
 
