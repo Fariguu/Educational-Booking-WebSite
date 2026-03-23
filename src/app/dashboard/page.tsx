@@ -82,8 +82,10 @@ export default async function DashboardPage() {
       
       const mappedLessons = lessons?.map((l: any) => ({
         ...l,
-        student_name: l.students?.profiles ? `${l.students.profiles.first_name} ${l.students.profiles.last_name || ''}`.trim() : null,
-        student_contact: l.students?.profiles?.email || null
+        student_name: l.students?.profiles 
+          ? `${l.students.profiles.first_name} ${l.students.profiles.last_name || ''}`.trim() 
+          : (l.guest_name || null),
+        student_contact: l.students?.profiles?.email || (l.guest_email || null)
       })) || []
 
       const pData = profData ? {
