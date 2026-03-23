@@ -4,7 +4,7 @@ import { useState } from 'react'
 import { AdminTabs } from '@/components/admin/admin-tabs'
 import { CreateSlotDialog } from '@/components/admin/create-slot-dialog'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Users, Mail, Clock, UserCircle, Edit3 } from 'lucide-react'
+import { Users, Mail, Clock, UserCircle, Edit3, Eye } from 'lucide-react'
 import { Button, buttonVariants } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import Link from 'next/link'
@@ -35,16 +35,26 @@ export default function ProfessorDashboardView({
         
         {/* Anteprima Profilo Pubblico */}
         <Card className="bg-gradient-to-br from-indigo-50 to-white border-indigo-100 shadow-sm relative overflow-hidden">
-          <div className="absolute top-0 right-0 p-3">
+          <div className="absolute top-0 right-0 p-3 flex gap-2">
+            <Link 
+              href={`/professori/${user.id}`} 
+              target="_blank"
+              rel="noopener noreferrer"
+              className={buttonVariants({ variant: 'outline', size: 'sm' }) + " bg-white/50 backdrop-blur-sm border-indigo-200 text-indigo-700 hover:bg-indigo-100"}
+              title="Visualizza Profilo Pubblico"
+            >
+              <Eye className="w-3.5 h-3.5 mr-1" />
+              <span className="hidden sm:inline">Visualizza</span>
+            </Link>
             <Link 
               href="/profile" 
-              className={buttonVariants({ variant: 'outline', size: 'sm' }) + " bg-white/50 backdrop-blur-sm border-indigo-200 text-indigo-700 hover:bg-indigo-100"}
+              className={buttonVariants({ variant: 'outline', size: 'sm' }) + " bg-white/50 backdrop-blur-sm border-indigo-200 text-indigo-700 hover:bg-indigo-100 bg-indigo-50"}
             >
-              <Edit3 className="w-3.5 h-3.5 mr-2" />
-              Modifica Profilo
+              <Edit3 className="w-3.5 h-3.5 mr-1" />
+              <span className="hidden sm:inline">Modifica</span>
             </Link>
           </div>
-          <CardContent className="p-5 pt-6 flex gap-4 items-center">
+          <CardContent className="p-5 pt-6 flex gap-4 items-center mt-4">
             <div className="w-14 h-14 bg-indigo-200 text-indigo-700 rounded-full flex items-center justify-center shrink-0">
               <UserCircle className="w-8 h-8" />
             </div>
