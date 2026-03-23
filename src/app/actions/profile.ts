@@ -59,7 +59,7 @@ export async function updateProfile(formData: z.infer<typeof ProfileUpdateSchema
     
     if (syncError) {
        console.error("Error syncing to professors:", syncError)
-       return { error: "Profilo base salvato, ma errore durante l'aggiornamento delle materie. Verifica i permessi database." }
+       return { error: `Errore durante l'aggiornamento delle materie: ${syncError.message}` }
     }
   }
   // La tabella students non riceve più dati duplicati dal profilo, 
