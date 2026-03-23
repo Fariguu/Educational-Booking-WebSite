@@ -93,8 +93,8 @@ export default async function ProfilePage(props: { searchParams: Promise<{ edit?
                 </h1>
 
                 <div className="flex flex-wrap gap-2 mb-4">
-                  {roleData?.subjects && roleData.subjects.length > 0 ? (
-                    roleData.subjects.map((sub: string) => (
+                  {roleData?.teaching_subjects && roleData.teaching_subjects.length > 0 ? (
+                    roleData.teaching_subjects.map((sub: string) => (
                       <Badge key={sub} variant="secondary" className="text-xs px-2.5 py-0.5">
                         <GraduationCap className="w-3 h-3 mr-1" />
                         {sub}
