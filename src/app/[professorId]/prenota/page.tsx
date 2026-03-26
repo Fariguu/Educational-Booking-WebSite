@@ -8,7 +8,7 @@ export const metadata: Metadata = {
     "Scegli uno slot dal calendario e prenota la tua lezione privata in pochi secondi. Nessuna registrazione richiesta.",
 };
 
-export default async function PrenotaPage({ params }: { params: Promise<{ professorId: string }> | { professorId: string } }) {
+export default async function PrenotaPage({ params }: { readonly params: Promise<{ professorId: string }> | { professorId: string } }) {
   // Support for Next.js 15+ async params or Next.js 14 sync params
   const resolvedParams = await Promise.resolve(params);
   const professorId = resolvedParams.professorId;

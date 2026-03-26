@@ -6,10 +6,10 @@ import { z } from 'zod'
 
 const ContactSchema = z.object({
   name: z.string().min(2, 'Il nome deve avere almeno 2 caratteri'),
-  email: z.string().email('Inserisci un indirizzo email valido'),
+  email: z.email({ message: 'Inserisci un indirizzo email valido' }),
   message: z.string().min(10, 'Il messaggio deve avere almeno 10 caratteri'),
   turnstileToken: z.string().min(1, 'Validazione anti-spam fallita'),
-  professorId: z.string().uuid().optional(), // opzionale solo per compatibilità temporanea se serve
+  professorId: z.uuid().optional(), // opzionale solo per compatibilità temporanea se serve
 })
 
 const resend = process.env.RESEND_API_KEY && process.env.RESEND_API_KEY !== 're_...'
@@ -78,7 +78,7 @@ export async function sendContactMessage(formData: z.infer<typeof ContactSchema>
           <p><strong>Email:</strong> <a href="mailto:${email}">${email}</a></p>
           <hr />
           <p><strong>Messaggio:</strong></p>
-          <p>${message.replace(/\n/g, '<br>')}</p>
+          <p>${message.replaceAll('\n', '<br>')}</p>
         `,
       })
     } catch (e) {

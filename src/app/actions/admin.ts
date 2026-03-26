@@ -6,10 +6,10 @@ import { revalidatePath } from 'next/cache'
 import { z } from 'zod'
 
 const CreateSlotSchema = z.object({
-  start_time: z.string().datetime(),
-  end_time: z.string().datetime(),
+  start_time: z.iso.datetime(),
+  end_time: z.iso.datetime(),
   is_recurring: z.boolean().optional().default(false),
-  recurrence_end_date: z.string().datetime().optional(),
+  recurrence_end_date: z.iso.datetime().optional(),
   duration_minutes: z.number().optional().default(60)
 })
 
@@ -107,6 +107,22 @@ const resend = process.env.RESEND_API_KEY && process.env.RESEND_API_KEY !== 're_
   ? new Resend(process.env.RESEND_API_KEY)
   : null;
 
+async function getStudentContact(supabase: any, student_id?: string | null, guest_name?: string | null, guest_email?: string | null) {
+  let studentName = guest_name
+  let studentEmail = guest_email
+
+  if (student_id) {
+    const { data: profile } = await supabase.from('profiles').select('first_name, last_name, email').eq('id', student_id).single()
+    if (profile) {
+      const fullName = `${profile.first_name || ''} ${profile.last_name || ''}`.trim()
+      studentName = fullName || studentName
+      studentEmail = profile.email || studentEmail
+    }
+  }
+
+  return { studentName, studentEmail }
+}
+
 export async function confirmLesson(lessonId: string) {
   try {
     await requireRole(['professor', 'admin', 'superadmin'])
@@ -134,22 +150,13 @@ export async function confirmLesson(lessonId: string) {
   if (error) return { error: error.message }
 
   // Recupero nome e contatto dello studente (registrato o guest)
-  let studentName = lesson.guest_name
-  let studentEmail = lesson.guest_email
-
-  if (lesson.student_id) {
-    const { data: profile } = await supabase.from('profiles').select('first_name, last_name, email').eq('id', lesson.student_id).single()
-    if (profile) {
-      studentName = `${profile.first_name || ''} ${profile.last_name || ''}`.trim() || studentName
-      studentEmail = profile.email || studentEmail
-    }
-  }
+  const { studentName, studentEmail } = await getStudentContact(supabase, lesson.student_id, lesson.guest_name, lesson.guest_email)
 
   // Genera link Google Calendar in UTC format essenziale YYYYMMDDTHHmmssZ
   const startDate = new Date(lesson.start_time)
   const endDate = new Date(lesson.end_time)
-  const formatS = startDate.toISOString().replace(/[-:]/g, '').split('.')[0] + 'Z'
-  const formatE = endDate.toISOString().replace(/[-:]/g, '').split('.')[0] + 'Z'
+  const formatS = startDate.toISOString().replaceAll(/[-:]/g, '').split('.')[0] + 'Z'
+  const formatE = endDate.toISOString().replaceAll(/[-:]/g, '').split('.')[0] + 'Z'
 
   const gcalUrl = `https://calendar.google.com/calendar/render?action=TEMPLATE&text=Lezione+Privata+-+${encodeURIComponent(studentName || 'Studente')}&dates=${formatS}/${formatE}&details=Contatto:+${encodeURIComponent(studentEmail || '')}`
 
@@ -209,16 +216,7 @@ export async function rejectLesson(lessonId: string) {
   if (error) return { error: error.message }
 
   // Recupero dati per notifica (se disponibili)
-  let studentName = lesson?.guest_name
-  let studentEmail = lesson?.guest_email
-
-  if (lesson?.student_id) {
-    const { data: profile } = await supabase.from('profiles').select('first_name, email').eq('id', lesson.student_id).single()
-    if (profile) {
-      studentName = profile.first_name || studentName
-      studentEmail = profile.email || studentEmail
-    }
-  }
+  const { studentName, studentEmail } = await getStudentContact(supabase, lesson?.student_id, lesson?.guest_name, lesson?.guest_email)
 
   if (resend && studentEmail) {
     const fromEmail = process.env.RESEND_FROM_EMAIL || 'Prenotazioni <onboarding@resend.dev>'
@@ -269,22 +267,13 @@ export async function updateLessonTime(lessonId: string, newStartTime: string, n
   if (error) return { error: error.message }
 
   // Recupero nome e contatto per GCal e email
-  let studentName = lesson.guest_name
-  let studentEmail = lesson.guest_email
-
-  if (lesson.student_id) {
-    const { data: profile } = await supabase.from('profiles').select('first_name, last_name, email').eq('id', lesson.student_id).single()
-    if (profile) {
-      studentName = `${profile.first_name || ''} ${profile.last_name || ''}`.trim() || studentName
-      studentEmail = profile.email || studentEmail
-    }
-  }
+  const { studentName, studentEmail } = await getStudentContact(supabase, lesson.student_id, lesson.guest_name, lesson.guest_email)
 
   // Genera link Google Calendar aggiornato
   const startDate = new Date(newStartTime)
   const endDate = new Date(newEndTime)
-  const formatS = startDate.toISOString().replace(/[-:]/g, '').split('.')[0] + 'Z'
-  const formatE = endDate.toISOString().replace(/[-:]/g, '').split('.')[0] + 'Z'
+  const formatS = startDate.toISOString().replaceAll(/[-:]/g, '').split('.')[0] + 'Z'
+  const formatE = endDate.toISOString().replaceAll(/[-:]/g, '').split('.')[0] + 'Z'
 
   const gcalUrl = `https://calendar.google.com/calendar/render?action=TEMPLATE&text=Lezione+Aggiornata+-+${encodeURIComponent(studentName || 'Studente')}&dates=${formatS}/${formatE}&details=Contatto:+${encodeURIComponent(studentEmail || '')}`
 
@@ -356,16 +345,7 @@ export async function cancelLessonWithChoice(lessonId: string, keepAvailable: bo
   }
 
   // Recupero dati per notifica
-  let studentName = lesson?.guest_name
-  let studentEmail = lesson?.guest_email
-
-  if (lesson?.student_id) {
-    const { data: profile } = await supabase.from('profiles').select('first_name, email').eq('id', lesson.student_id).single()
-    if (profile) {
-      studentName = profile.first_name || studentName
-      studentEmail = profile.email || studentEmail
-    }
-  }
+  const { studentName, studentEmail } = await getStudentContact(supabase, lesson?.student_id, lesson?.guest_name, lesson?.guest_email)
 
   // Notify student of cancellation
   if (resend && studentEmail) {
