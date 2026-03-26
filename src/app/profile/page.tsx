@@ -6,7 +6,7 @@ import { ArrowLeft, Edit3, GraduationCap } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 
-export default async function ProfilePage(props: { searchParams: Promise<{ edit?: string }> | { edit?: string } }) {
+export default async function ProfilePage(props: { readonly searchParams: Promise<{ edit?: string }> | { edit?: string } }) {
   const searchParams = await Promise.resolve(props.searchParams)
   const isEditing = searchParams?.edit === 'true'
 
@@ -39,6 +39,27 @@ export default async function ProfilePage(props: { searchParams: Promise<{ edit?
   const name = profile?.first_name || profile?.last_name 
     ? `${profile?.first_name || ''} ${profile?.last_name || ''}`.trim() 
     : 'Utente Anonimo'
+
+  const renderBadges = () => {
+    if (roleData?.teaching_subjects && roleData.teaching_subjects.length > 0) {
+      return roleData.teaching_subjects.map((sub: string) => (
+        <Badge key={sub} variant="secondary" className="text-xs px-2.5 py-0.5">
+          <GraduationCap className="w-3 h-3 mr-1" />
+          {sub}
+        </Badge>
+      ))
+    }
+    
+    if (profile?.role === 'professor') {
+      return (
+        <Badge variant="outline" className="text-xs px-2.5 py-0.5 text-muted-foreground">
+          Nessuna materia inserita
+        </Badge>
+      )
+    }
+    
+    return null
+  }
 
   if (isEditing) {
     return (
@@ -93,18 +114,7 @@ export default async function ProfilePage(props: { searchParams: Promise<{ edit?
                 </h1>
 
                 <div className="flex flex-wrap gap-2 mb-4">
-                  {roleData?.teaching_subjects && roleData.teaching_subjects.length > 0 ? (
-                    roleData.teaching_subjects.map((sub: string) => (
-                      <Badge key={sub} variant="secondary" className="text-xs px-2.5 py-0.5">
-                        <GraduationCap className="w-3 h-3 mr-1" />
-                        {sub}
-                      </Badge>
-                    ))
-                  ) : profile?.role === 'professor' ? (
-                    <Badge variant="outline" className="text-xs px-2.5 py-0.5 text-muted-foreground">
-                      Nessuna materia inserita
-                    </Badge>
-                  ) : null}
+                  {renderBadges()}
                 </div>
 
                 <p className="text-muted-foreground leading-relaxed max-w-2xl whitespace-pre-wrap">
