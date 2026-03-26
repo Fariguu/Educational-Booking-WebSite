@@ -10,7 +10,7 @@ export const metadata: Metadata = {
     "Scegli uno slot dal calendario e prenota la tua lezione privata in pochi secondi. Nessuna registrazione richiesta.",
 };
 
-export default async function PrenotaPage({ params }: { params: Promise<{ slug: string }> | { slug: string } }) {
+export default async function PrenotaPage({ params }: { readonly params: Promise<{ slug: string }> | { slug: string } }) {
   const resolvedParams = await Promise.resolve(params);
   const slug = resolvedParams.slug;
 

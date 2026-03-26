@@ -12,7 +12,7 @@ export const metadata: Metadata = {
   description: "Hai domande o vuoi maggiori informazioni? Scrivimi un messaggio.",
 };
 
-export default async function ContattiPage({ params }: { params: Promise<{ slug: string }> | { slug: string } }) {
+export default async function ContattiPage({ params }: { readonly params: Promise<{ slug: string }> | { slug: string } }) {
   const resolvedParams = await Promise.resolve(params);
   const slug = resolvedParams.slug;
 

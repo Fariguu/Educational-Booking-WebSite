@@ -1,16 +1,14 @@
 import { createClient } from '@/utils/supabase/server'
 import { notFound } from 'next/navigation'
 import Link from 'next/link'
-import { BookOpen, GraduationCap, Mail, CalendarCheck } from 'lucide-react'
+import { BookOpen, GraduationCap, Mail, CalendarCheck, Star } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
-import { Card, CardContent } from '@/components/ui/card'
 import PublicNavbar from '@/components/public-navbar'
 import { ReviewSection } from '@/components/review-section'
 import { getProfessorReviewsAction } from '@/app/actions/reviews'
-import { Star } from 'lucide-react'
 
-export async function generateMetadata({ params }: { params: Promise<{ slug: string }> | { slug: string } }) {
+export async function generateMetadata({ params }: { readonly params: Promise<{ slug: string }> | { slug: string } }) {
   const resolvedParams = await Promise.resolve(params)
   const supabase = await createClient()
   const { data: prof } = await supabase
@@ -28,7 +26,7 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
   }
 }
 
-export default async function ProfessorProfilePage({ params }: { params: Promise<{ slug: string }> | { slug: string } }) {
+export default async function ProfessorProfilePage({ params }: { readonly params: Promise<{ slug: string }> | { slug: string } }) {
   const resolvedParams = await Promise.resolve(params)
   const slug = resolvedParams.slug
 
@@ -43,11 +41,11 @@ export default async function ProfessorProfilePage({ params }: { params: Promise
     notFound()
   }
 
-  const p = (profRecord as any).profiles
+  const p = profRecord.profiles
   const professor = {
     id: profRecord.id,
     slug: profRecord.slug,
-    subjects: profRecord.teaching_subjects || (profRecord as any).subjects || [],
+    subjects: profRecord.teaching_subjects || profRecord.subjects || [],
     name: p ? `${p.first_name || ''} ${p.last_name || ''}`.trim() : 'Docente',
     bio: p?.bio,
     avatar_url: p?.avatar_url
