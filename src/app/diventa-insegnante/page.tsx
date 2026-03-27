@@ -4,6 +4,8 @@ import PublicNavbar from "@/components/public-navbar"
 import ProfessorApplicationForm from "@/components/professor-application-form"
 import { Mail } from "lucide-react"
 
+export const dynamic = 'force-dynamic'
+
 export default async function DiventaInsegnantePage() {
   const supabase = await createClient()
 

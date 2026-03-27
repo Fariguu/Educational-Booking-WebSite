@@ -1,0 +1,24 @@
+
+> sito-prenotazioni@0.1.0 build
+> next build
+
+▲ Next.js 16.1.6 (Turbopack)
+- Environments: .env.local
+
+⚠ The "middleware" file convention is deprecated. Please use "proxy" instead. Learn more: https://nextjs.org/docs/messages/middleware-to-proxy
+  Creating an optimized production build ...
+✓ Compiled successfully in 5.6s
+  Running TypeScript ...
+Failed to compile.
+
+.next/dev/types/validator.ts:53:39
+Type error: Cannot find module '../../../src/app/[professorId]/contatti/page.js' or its corresponding type declarations.
+
+[0m [90m 51 |[39m {
+ [90m 52 |[39m   type __IsExpected[33m<[39m[33mSpecific[39m [36mextends[39m [33mAppPageConfig[39m[33m<[39m[32m"/[professorId]/contatti"[39m[33m>>[39m [33m=[39m [33mSpecific[39m
+[31m[1m>[22m[39m[90m 53 |[39m   [36mconst[39m handler [33m=[39m {} [36mas[39m [36mtypeof[39m [36mimport[39m([32m"../../../src/app/[professorId]/contatti/page.js"[39m)
+ [90m    |[39m                                       [31m[1m^[22m[39m
+ [90m 54 |[39m   type __Check [33m=[39m __IsExpected[33m<[39m[36mtypeof[39m handler[33m>[39m
+ [90m 55 |[39m   [90m// @ts-ignore[39m
+ [90m 56 |[39m   type __Unused [33m=[39m __Check[0m
+Next.js build worker exited with code: 1 and signal: null

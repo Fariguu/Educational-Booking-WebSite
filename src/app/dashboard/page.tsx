@@ -7,6 +7,8 @@ import { Loader2, Mail } from 'lucide-react'
 import StudentDashboardView from '@/components/dashboard/student-view'
 import { getContactMessages } from '@/app/actions/contact'
 
+export const dynamic = 'force-dynamic'
+
 export default async function DashboardPage() {
   const supabase = await createClient()
 

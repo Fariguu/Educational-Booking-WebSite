@@ -6,6 +6,8 @@ import { ArrowLeft, Edit3, GraduationCap } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 
+export const dynamic = 'force-dynamic'
+
 export default async function ProfilePage(props: { readonly searchParams: Promise<{ edit?: string }> | { edit?: string } }) {
   const searchParams = await Promise.resolve(props.searchParams)
   const isEditing = searchParams?.edit === 'true'
