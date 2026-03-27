@@ -130,7 +130,7 @@ export async function approveApplication(userId: string) {
   
   // Genera uno slug semplice
   let baseSlug = application.full_name
-    ? application.full_name.toLowerCase().trim().replace(/[^a-z0-9]+/g, '-')
+    ? application.full_name.toLowerCase().trim().replaceAll(/[^a-z0-9]+/g, '-')
     : `prof-${userId.substring(0, 6)}`
     
   const randomSuffix = Math.floor(Math.random() * 1000).toString().padStart(3, '0')

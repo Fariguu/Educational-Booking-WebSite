@@ -1,6 +1,6 @@
 'use server'
 
-import { createClient, createAdminClient } from '@/utils/supabase/server'
+import { createClient } from '@/utils/supabase/server'
 import { z } from 'zod'
 import { revalidatePath } from 'next/cache'
 
@@ -9,7 +9,7 @@ const ProfileUpdateSchema = z.object({
   lastName: z.string().min(2, "Cognome non valido"),
   bio: z.string().optional(),
   phone: z.string().optional(),
-  publicEmail: z.string().email("Email pubblica non valida").optional().or(z.literal('')),
+  publicEmail: z.email({ message: "Email pubblica non valida" }).optional().or(z.literal('')),
   subjects: z.array(z.string()).optional(),
 })
 

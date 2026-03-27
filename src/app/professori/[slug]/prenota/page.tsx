@@ -10,21 +10,27 @@ export const metadata: Metadata = {
     "Scegli uno slot dal calendario e prenota la tua lezione privata in pochi secondi. Nessuna registrazione richiesta.",
 };
 
-export default async function PrenotaPage({ params }: { params: Promise<{ slug: string }> | { slug: string } }) {
+export default async function PrenotaPage({ params }: { readonly params: Promise<{ slug: string }> | { slug: string } }) {
   const resolvedParams = await Promise.resolve(params);
   const slug = resolvedParams.slug;
 
-  // Risolvi slug → UUID
+  // Risolvi slug → UUID (con join su profiles per il nome)
   const supabase = await createClient();
-  const { data: professor } = await supabase
+  const { data: profData } = await supabase
     .from('professors')
-    .select('id, name')
+    .select('id, profiles!inner(first_name, last_name)')
     .eq('slug', slug)
     .single();
 
-  if (!professor) {
+  if (!profData) {
     notFound();
   }
+
+  const profile = (profData as any).profiles;
+  const professor = {
+    id: profData.id,
+    name: profile ? `${profile.first_name || ''} ${profile.last_name || ''}`.trim() : 'Docente'
+  };
 
   return (
     <main className="min-h-screen bg-background">

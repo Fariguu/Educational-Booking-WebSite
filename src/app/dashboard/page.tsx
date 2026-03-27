@@ -7,6 +7,8 @@ import { Loader2, Mail } from 'lucide-react'
 import StudentDashboardView from '@/components/dashboard/student-view'
 import { getContactMessages } from '@/app/actions/contact'
 
+export const dynamic = 'force-dynamic'
+
 export default async function DashboardPage() {
   const supabase = await createClient()
 
@@ -82,8 +84,10 @@ export default async function DashboardPage() {
       
       const mappedLessons = lessons?.map((l: any) => ({
         ...l,
-        student_name: l.students?.profiles ? `${l.students.profiles.first_name} ${l.students.profiles.last_name || ''}`.trim() : null,
-        student_contact: l.students?.profiles?.email || null
+        student_name: l.students?.profiles 
+          ? `${l.students.profiles.first_name} ${l.students.profiles.last_name || ''}`.trim() 
+          : (l.guest_name || null),
+        student_contact: l.students?.profiles?.email || (l.guest_email || null)
       })) || []
 
       const pData = profData ? {

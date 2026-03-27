@@ -1,13 +1,13 @@
 import { createClient } from '@/utils/supabase/server'
 import { redirect } from 'next/navigation'
 import Link from 'next/link'
-import { Home, LogOut, User as UserIcon, ArrowLeft } from 'lucide-react'
+import { Home, User as UserIcon, ArrowLeft } from 'lucide-react'
 import LogoutButton from '@/components/logout-button'
 
 export default async function DashboardLayout({
   children,
 }: {
-  children: React.ReactNode
+  readonly children: React.ReactNode
 }) {
   const supabase = await createClient()
 

@@ -1,5 +1,5 @@
 import Link from 'next/link'
-import { BookOpen, Search, ArrowRight, Star } from 'lucide-react'
+import { Search, Star } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import PublicNavbar from '@/components/public-navbar'
@@ -11,7 +11,7 @@ export const metadata = {
   title: 'Risultati di Ricerca Docenti',
 }
 
-export default async function SearchResultsPage({ searchParams }: { searchParams: Promise<{ q?: string }> | { q?: string } }) {
+export default async function SearchResultsPage({ searchParams }: { readonly searchParams: Promise<{ q?: string }> | { q?: string } }) {
   const resolvedParams = await Promise.resolve(searchParams)
   const q = resolvedParams.q || ""
 
@@ -38,7 +38,7 @@ export default async function SearchResultsPage({ searchParams }: { searchParams
     const stats = profStats[prof.id]
     return {
       ...prof,
-      avgRating: stats ? (stats.sum / stats.total).toFixed(1) : parseFloat("0").toFixed(1),
+      avgRating: stats ? (stats.sum / stats.total).toFixed(1) : Number.parseFloat("0").toFixed(1),
       totalReviews: stats ? stats.total : 0
     }
   }).sort((a: any, b: any) => {

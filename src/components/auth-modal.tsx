@@ -16,7 +16,7 @@ import { loginWithPassword, registerWithPassword, resetPasswordAction } from '@/
 const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*[\d\W]).{8,}$/
 
 const schema = z.object({
-  email: z.string().email("Inserisci un indirizzo email valido"),
+  email: z.email({ message: "Inserisci un indirizzo email valido" }),
   password: z.string().min(8, "Minimo 8 caratteri").regex(passwordRegex, "Almeno 1 maiuscola, 1 minuscola e 1 numero o carattere speciale").optional().or(z.literal('')),
   firstName: z.string().min(2, "Inserisci il tuo nome").optional().or(z.literal('')),
   phone: z.string().regex(/^[+]?[0-9\s\-()]{7,}$/, "Numero di telefono non valido").optional().or(z.literal('')),
@@ -81,7 +81,7 @@ export default function AuthModal() {
     setIsLogin(!isLogin)
     if (isForgot) {
       const newParams = new URLSearchParams(searchParams.toString())
-      newParams.set('auth', !isLogin ? 'login' : 'register')
+      newParams.set('auth', isLogin ? 'register' : 'login')
       router.push(`${pathname}?${newParams.toString()}`)
     }
   }
@@ -94,6 +94,42 @@ export default function AuthModal() {
     router.push(`${pathname}?${newParams.toString()}`)
   }
 
+  const handleResetPassword = async (email: string) => {
+    const res = await resetPasswordAction(email)
+    if (res.error) {
+      setErrorMsg(res.error)
+    } else {
+      toast.success("Ti abbiamo inviato un'email con il link per reimpostare la password.", { duration: 6000 })
+      closeMenu()
+    }
+  }
+
+  const handleLogin = async (data: AuthParams) => {
+    const res = await loginWithPassword({ email: data.email, password: data.password! })
+    if (res.error) {
+      setErrorMsg("Email o password errata.")
+    } else {
+      toast.success("Accesso effettuato")
+      closeMenu()
+      router.refresh()
+    }
+  }
+
+  const handleRegister = async (data: AuthParams) => {
+    const res = await registerWithPassword({ email: data.email, password: data.password! }) as any
+    if (res.error) {
+      setErrorMsg(res.error)
+    } else if (res.message) {
+      // OTP / email confirmation required
+      setVerifiedEmail(data.email)
+      setAwaitingVerification(true)
+    } else {
+      toast.success("Account creato con successo! Ora sei loggato.")
+      closeMenu()
+      router.refresh()
+    }
+  }
+
   const onSubmit = async (data: AuthParams) => {
     if (!isForgot && (!data.password || data.password.length < 8)) {
       setErrorMsg("La password è obbligatoria e deve contenere almeno 8 caratteri.")
@@ -104,37 +140,11 @@ export default function AuthModal() {
     setErrorMsg(null)
     try {
       if (isForgot) {
-         const res = await resetPasswordAction(data.email)
-         if (res.error) {
-           setErrorMsg(res.error)
-         } else {
-           toast.success("Ti abbiamo inviato un'email con il link per reimpostare la password.", { duration: 6000 })
-           closeMenu()
-         }
+        await handleResetPassword(data.email)
       } else if (isLogin) {
-        const res = await loginWithPassword({ email: data.email, password: data.password! })
-        if (res.error) {
-          setErrorMsg("Email o password errata.")
-        } else {
-          toast.success("Accesso effettuato")
-          closeMenu()
-          router.refresh()
-        }
+        await handleLogin(data)
       } else {
-        const res = await registerWithPassword({ email: data.email, password: data.password! }) as any
-        if (res.error) {
-          setErrorMsg(res.error) // Supabase returns descriptive errors like "User already registered" or we map them in the action
-        } else {
-          if (res.message) {
-            // OTP / email confirmation required
-            setVerifiedEmail(data.email)
-            setAwaitingVerification(true)
-          } else {
-            toast.success("Account creato con successo! Ora sei loggato.")
-            closeMenu()
-            router.refresh()
-          }
-        }
+        await handleRegister(data)
       }
     } catch {
       setErrorMsg("Errore di rete")
@@ -201,21 +211,35 @@ export default function AuthModal() {
                   <>
                     <div className="px-8 pt-10 pb-2 relative z-10">
                         <AnimatePresence mode="wait">
-                            <motion.div
-                                key={isLogin ? 'login-text' : 'register-text'}
-                                initial={{ y: 10, opacity: 0 }}
-                                animate={{ y: 0, opacity: 1 }}
-                                exit={{ y: -10, opacity: 0 }}
-                                transition={{ duration: 0.2 }}
-                                className="text-center"
-                            >
-                                <h2 className="text-2xl font-bold tracking-tight mb-2">
-                                    {isForgot ? "Recupera Password" : (isLogin ? "Bentornato" : "Crea un Account")}
-                                </h2>
-                                <p className="text-sm text-muted-foreground">
-                                    {isForgot ? "Inserisci la tua email per ricevere il link di ripristino." : (isLogin ? "Accedi per gestire le tue prenotazioni." : "Unisciti a noi gratuitamente in pochi secondi.")}
-                                </p>
-                            </motion.div>
+                            {(() => {
+                                let title = "Crea un Account"
+                                let description = "Unisciti a noi gratuitamente in pochi secondi."
+                                if (isForgot) {
+                                    title = "Recupera Password"
+                                    description = "Inserisci la tua email per ricevere il link di ripristino."
+                                } else if (isLogin) {
+                                    title = "Bentornato"
+                                    description = "Accedi per gestire le tue prenotazioni."
+                                }
+
+                                return (
+                                    <motion.div
+                                        key={isLogin ? 'login-text' : 'register-text'}
+                                        initial={{ y: 10, opacity: 0 }}
+                                        animate={{ y: 0, opacity: 1 }}
+                                        exit={{ y: -10, opacity: 0 }}
+                                        transition={{ duration: 0.2 }}
+                                        className="text-center"
+                                    >
+                                        <h2 className="text-2xl font-bold tracking-tight mb-2">
+                                            {title}
+                                        </h2>
+                                        <p className="text-sm text-muted-foreground">
+                                            {description}
+                                        </p>
+                                    </motion.div>
+                                )
+                            })()}
                         </AnimatePresence>
                     </div>
 
@@ -319,20 +343,30 @@ export default function AuthModal() {
                                 className="w-full h-11 bg-indigo-600 hover:bg-indigo-700 text-white font-medium text-base mt-2 shadow-md shadow-indigo-200 transition-all"
                                 disabled={isPending}
                             >
-                                {isPending ? <Loader2 className="w-5 h-5 animate-spin" /> : (isForgot ? "Invia Link di Ripristino" : (isLogin ? "Accedi" : "Crea Account"))}
+                                {(() => {
+                                    if (isPending) return <Loader2 className="w-5 h-5 animate-spin" />
+                                    if (isForgot) return "Invia Link di Ripristino"
+                                    return isLogin ? "Accedi" : "Crea Account"
+                                })()}
                             </Button>
                         </form>
 
                         <div className="mt-8 text-center text-sm">
                             <span className="text-muted-foreground">
-                                {isForgot ? "Ti sei ricordato la password? " : (isLogin ? "Non hai un account? " : "Hai già un account? ")}
+                                {(() => {
+                                    if (isForgot) return "Ti sei ricordato la password? "
+                                    return isLogin ? "Non hai un account? " : "Hai già un account? "
+                                })()}
                             </span>
                             <button 
                                 type="button" 
                                 onClick={toggleMode}
                                 className="font-semibold text-indigo-600 hover:text-indigo-700 hover:underline transition-all"
                             >
-                                {isForgot ? "Torna al Login" : (isLogin ? "Registrati ora" : "Accedi")}
+                                {(() => {
+                                    if (isForgot) return "Torna al Login"
+                                    return isLogin ? "Registrati ora" : "Accedi"
+                                })()}
                             </button>
                         </div>
                     </div>

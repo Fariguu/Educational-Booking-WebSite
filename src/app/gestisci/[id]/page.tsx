@@ -8,7 +8,7 @@ import { Calendar, Clock, AlertCircle } from 'lucide-react'
 // Forza rendering dinamico in app router per usare i param
 export const dynamic = 'force-dynamic'
 
-export default async function ManageLessonPage({ params }: { params: Promise<{ id: string }> }) {
+export default async function ManageLessonPage({ params }: { readonly params: Promise<{ id: string }> }) {
   const { id } = await params;
   const supabase = await createClient()
 
@@ -19,7 +19,7 @@ export default async function ManageLessonPage({ params }: { params: Promise<{ i
     .eq('id', id)
     .single()
 
-  if (error || !lesson || !lesson.student_contact) {
+  if (error || !lesson?.student_contact) {
     notFound() // Gestisce slot inesistenti o non associati ad uno studente
   }
 
