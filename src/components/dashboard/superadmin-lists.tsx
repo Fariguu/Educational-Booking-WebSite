@@ -2,9 +2,8 @@
 
 import { useState, useTransition } from 'react'
 import { GraduationCap, Shield, Users, Trash2, Mail, UserMinus, UserPlus, X, Loader2 } from 'lucide-react'
-import { Button } from '@/components/ui/button'
+import { Button, buttonVariants } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { Textarea } from '@/components/ui/textarea'
 import { Label } from '@/components/ui/label'
 import { Badge } from '@/components/ui/badge'
 import {
@@ -18,56 +17,17 @@ import {
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog'
 import { toast } from 'sonner'
-import { demoteProfessor, inviteAdmin, deleteStudentAccount, sendEmailToUser } from '@/app/actions/superadmin'
+import { demoteProfessor, inviteAdmin, deleteStudentAccount } from '@/app/actions/superadmin'
 
-// ─── Types ─────────────────────────────────────────────────────────────────── 
+function gmailUrl(to: string, subject = '') {
+  return `https://mail.google.com/mail/?view=cm&fs=1&to=${encodeURIComponent(to)}&su=${encodeURIComponent(subject)}`
+}
+
+// ─── Types ────────────────────────────────────────────────────────────────────
 
 type Professor = { id: string; first_name: string; last_name: string; email: string }
 type Admin = { id: string; first_name: string; last_name: string; email: string; phone?: string }
 type Student = { id: string; first_name: string; last_name: string; email: string }
-
-// ─── Send-Email Modal ─────────────────────────────────────────────────────────
-
-function EmailModal({ target, onClose }: Readonly<{ target: { name: string; email: string }; onClose: () => void }>) {
-  const [pending, startTransition] = useTransition()
-  const [subject, setSubject] = useState('')
-  const [body, setBody] = useState('')
-
-  const handleSend = () => {
-    if (!subject.trim() || !body.trim()) { toast.error('Compila tutti i campi.'); return }
-    startTransition(async () => {
-      const res = await sendEmailToUser({ to: target.email, subject, body })
-      if (res.error) { toast.error(res.error) } else { toast.success('Email inviata!'); onClose() }
-    })
-  }
-
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
-      <div className="bg-background rounded-2xl shadow-xl border w-full max-w-lg p-6 space-y-4">
-        <div className="flex items-center justify-between">
-          <h3 className="font-bold text-lg">Scrivi a {target.name}</h3>
-          <Button variant="ghost" size="icon" onClick={onClose}><X className="w-4 h-4" /></Button>
-        </div>
-        <p className="text-sm text-muted-foreground">A: <span className="font-medium text-foreground">{target.email}</span></p>
-        <div className="space-y-2">
-          <Label htmlFor="email-subject">Oggetto</Label>
-          <Input id="email-subject" placeholder="Oggetto dell'email" value={subject} onChange={e => setSubject(e.target.value)} />
-        </div>
-        <div className="space-y-2">
-          <Label htmlFor="email-body">Messaggio</Label>
-          <Textarea id="email-body" placeholder="Scrivi il messaggio..." rows={5} value={body} onChange={e => setBody(e.target.value)} />
-        </div>
-        <div className="flex gap-2 justify-end">
-          <Button variant="outline" onClick={onClose}>Annulla</Button>
-          <Button onClick={handleSend} disabled={pending}>
-            {pending ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Mail className="w-4 h-4 mr-2" />}
-            Invia
-          </Button>
-        </div>
-      </div>
-    </div>
-  )
-}
 
 // ─── Invite Admin Modal ────────────────────────────────────────────────────────
 
@@ -127,7 +87,6 @@ function InviteAdminModal({ onClose }: Readonly<{ onClose: () => void }>) {
 export function ProfessorsList({ professors }: Readonly<{ professors: Professor[] }>) {
   const [pending, startTransition] = useTransition()
   const [confirmDemote, setConfirmDemote] = useState<Professor | null>(null)
-  const [emailTarget, setEmailTarget] = useState<{ name: string; email: string } | null>(null)
 
   const handleDemote = (prof: Professor) => {
     startTransition(async () => {
@@ -143,7 +102,6 @@ export function ProfessorsList({ professors }: Readonly<{ professors: Professor[
 
   return (
     <div className="space-y-3">
-      {emailTarget && <EmailModal target={emailTarget} onClose={() => setEmailTarget(null)} />}
       <AlertDialog open={!!confirmDemote} onOpenChange={(open: boolean) => { if (!open) setConfirmDemote(null) }}>
         <AlertDialogContent>
           <AlertDialogHeader>
@@ -173,9 +131,14 @@ export function ProfessorsList({ professors }: Readonly<{ professors: Professor[
             <p className="text-sm text-muted-foreground">{prof.email}</p>
           </div>
           <div className="flex gap-2">
-            <Button size="sm" variant="outline" onClick={() => setEmailTarget({ name: `${prof.first_name} ${prof.last_name}`, email: prof.email })}>
+            <a
+              href={gmailUrl(prof.email, `Messaggio dalla piattaforma PrenotaLezioni`)}
+              target="_blank"
+              rel="noopener noreferrer"
+              className={buttonVariants({ variant: 'outline', size: 'sm' })}
+            >
               <Mail className="w-3.5 h-3.5 mr-1" /> Contatta
-            </Button>
+            </a>
             <Button size="sm" variant="destructive" onClick={() => setConfirmDemote(prof)}>
               <UserMinus className="w-3.5 h-3.5 mr-1" /> Retrocedi
             </Button>
@@ -186,16 +149,14 @@ export function ProfessorsList({ professors }: Readonly<{ professors: Professor[
   )
 }
 
-// ─── Admins List ─────────────────────────────────────────────────────────────
+// ─── Admins List ──────────────────────────────────────────────────────────────
 
 export function AdminsList({ admins }: Readonly<{ admins: Admin[] }>) {
   const [showInvite, setShowInvite] = useState(false)
-  const [emailTarget, setEmailTarget] = useState<{ name: string; email: string } | null>(null)
 
   return (
     <div className="space-y-4">
       {showInvite && <InviteAdminModal onClose={() => setShowInvite(false)} />}
-      {emailTarget && <EmailModal target={emailTarget} onClose={() => setEmailTarget(null)} />}
 
       <div className="flex justify-end">
         <Button className="bg-indigo-600 hover:bg-indigo-700 text-white" onClick={() => setShowInvite(true)}>
@@ -215,9 +176,14 @@ export function AdminsList({ admins }: Readonly<{ admins: Admin[] }>) {
             </div>
             <div className="flex gap-2">
               <Badge variant="outline" className="text-indigo-600 border-indigo-200 bg-indigo-50">Admin</Badge>
-              <Button size="sm" variant="outline" onClick={() => setEmailTarget({ name: `${admin.first_name} ${admin.last_name}`, email: admin.email })}>
+              <a
+                href={gmailUrl(admin.email)}
+                target="_blank"
+                rel="noopener noreferrer"
+                className={buttonVariants({ variant: 'outline', size: 'sm' })}
+              >
                 <Mail className="w-3.5 h-3.5 mr-1" /> Contatta
-              </Button>
+              </a>
             </div>
           </div>
         ))
