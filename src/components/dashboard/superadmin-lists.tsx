@@ -17,7 +17,7 @@ import {
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog'
 import { toast } from 'sonner'
-import { demoteProfessor, inviteAdmin, deleteStudentAccount } from '@/app/actions/superadmin'
+import { demoteProfessor, inviteAdmin, deleteStudentAccount, revokeAdminInvite } from '@/app/actions/superadmin'
 
 function gmailUrl(to: string, subject = '') {
   return `https://mail.google.com/mail/?view=cm&fs=1&to=${encodeURIComponent(to)}&su=${encodeURIComponent(subject)}`
@@ -26,7 +26,7 @@ function gmailUrl(to: string, subject = '') {
 // ─── Types ────────────────────────────────────────────────────────────────────
 
 type Professor = { id: string; first_name: string; last_name: string; email: string }
-type Admin = { id: string; first_name: string; last_name: string; email: string; phone?: string }
+type Admin = { id: string; first_name: string; last_name: string; email: string; phone?: string; email_confirmed_at?: string | null }
 type Student = { id: string; first_name: string; last_name: string; email: string }
 
 // ─── Invite Admin Modal ────────────────────────────────────────────────────────
@@ -39,8 +39,16 @@ function InviteAdminModal({ onClose }: Readonly<{ onClose: () => void }>) {
     if (!form.first_name || !form.last_name || !form.email) { toast.error('Nome, Cognome ed Email sono obbligatori.'); return }
     startTransition(async () => {
       const res = await inviteAdmin({ ...form })
-      if (res.error) { toast.error(res.error) }
-      else { toast.success("Invito inviato! Il nuovo admin riceverà l'email di accesso."); onClose() }
+      if (res.error) { 
+        toast.error(res.error) 
+      } else { 
+        if (res.emailError) {
+          toast.warning(res.emailError, { duration: 8000 })
+        } else {
+          toast.success("Invito inviato! Il nuovo admin riceverà l'email di accesso.") 
+        }
+        onClose() 
+      }
     })
   }
 
@@ -153,10 +161,43 @@ export function ProfessorsList({ professors }: Readonly<{ professors: Professor[
 
 export function AdminsList({ admins }: Readonly<{ admins: Admin[] }>) {
   const [showInvite, setShowInvite] = useState(false)
+  const [confirmRevoke, setConfirmRevoke] = useState<Admin | null>(null)
+  const [pending, startTransition] = useTransition()
+
+  const handleRevoke = (admin: Admin) => {
+    startTransition(async () => {
+      const res = await revokeAdminInvite(admin.id)
+      if (res.error) { toast.error(res.error) }
+      else { toast.success(`Invito a ${admin.first_name} revocato con successo.`) }
+      setConfirmRevoke(null)
+    })
+  }
 
   return (
     <div className="space-y-4">
       {showInvite && <InviteAdminModal onClose={() => setShowInvite(false)} />}
+      
+      <AlertDialog open={!!confirmRevoke} onOpenChange={(open: boolean) => { if (!open) setConfirmRevoke(null) }}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Revocare invito a {confirmRevoke?.first_name}?</AlertDialogTitle>
+            <AlertDialogDescription>
+              L&apos;account in sospeso verrà eliminato e il link di invito non sarà più valido.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Annulla</AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-destructive text-white hover:bg-destructive/90"
+              onClick={() => confirmRevoke && handleRevoke(confirmRevoke)}
+              disabled={pending}
+            >
+              {pending ? <Loader2 className="w-4 h-4 animate-spin mr-1" /> : null}
+              Revoca Invito
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       <div className="flex justify-end">
         <Button className="bg-indigo-600 hover:bg-indigo-700 text-white" onClick={() => setShowInvite(true)}>
@@ -174,16 +215,27 @@ export function AdminsList({ admins }: Readonly<{ admins: Admin[] }>) {
               <p className="text-sm text-muted-foreground">{admin.email}</p>
               {admin.phone && <p className="text-xs text-muted-foreground">{admin.phone}</p>}
             </div>
-            <div className="flex gap-2">
-              <Badge variant="outline" className="text-indigo-600 border-indigo-200 bg-indigo-50">Admin</Badge>
-              <a
-                href={gmailUrl(admin.email)}
-                target="_blank"
-                rel="noopener noreferrer"
-                className={buttonVariants({ variant: 'outline', size: 'sm' })}
-              >
-                <Mail className="w-3.5 h-3.5 mr-1" /> Contatta
-              </a>
+            <div className="flex gap-2 items-center">
+              {admin.email_confirmed_at ? (
+                <Badge variant="outline" className="text-indigo-600 border-indigo-200 bg-indigo-50">Admin</Badge>
+              ) : (
+                <Badge variant="secondary" className="bg-amber-100 text-amber-800 hover:bg-amber-200">In Attesa</Badge>
+              )}
+              
+              {admin.email_confirmed_at ? (
+                <a
+                  href={gmailUrl(admin.email)}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className={buttonVariants({ variant: 'outline', size: 'sm' })}
+                >
+                  <Mail className="w-3.5 h-3.5 mr-1" /> Contatta
+                </a>
+              ) : (
+                <Button size="sm" variant="destructive" onClick={() => setConfirmRevoke(admin)}>
+                  <Trash2 className="w-3.5 h-3.5 mr-1" /> Revoca Invito
+                </Button>
+              )}
             </div>
           </div>
         ))

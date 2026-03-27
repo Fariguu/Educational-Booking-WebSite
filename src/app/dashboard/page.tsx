@@ -37,31 +37,54 @@ export default async function DashboardPage() {
 
   switch (profile.role) {
     case 'superadmin': {
+      const { createAdminClient } = await import('@/utils/supabase/server')
+      const adminClient = await createAdminClient()
+      
       const [
         { data: adminProfiles },
         { data: professorProfiles },
         { data: studentProfiles },
         { data: applications },
-        { data: contactMessages }
+        { data: contactMessages },
+        { data: authUsers }
       ] = await Promise.all([
         supabase.from('profiles').select('id, first_name, last_name, email, phone').eq('role', 'admin').order('first_name'),
         supabase.from('profiles').select('id, first_name, last_name, email').eq('role', 'professor').order('first_name'),
         supabase.from('profiles').select('id, first_name, last_name, email').in('role', ['user', 'student']).order('first_name'),
         supabase.from('professor_applications').select('*').order('created_at', { ascending: false }),
-        getContactMessages()
+        getContactMessages(),
+        adminClient.auth.admin.listUsers()
       ])
+
+      const mergeAuthData = (profiles: any[]) => {
+        if (!profiles) return []
+        return profiles.map(p => {
+          const authUser = authUsers?.users?.find((u: any) => u.id === p.id)
+          return {
+            ...p,
+            email: p.email || authUser?.email,
+            first_name: p.first_name || authUser?.user_metadata?.first_name || authUser?.user_metadata?.name || 'Utente',
+            last_name: p.last_name || authUser?.user_metadata?.last_name || '',
+            email_confirmed_at: authUser?.email_confirmed_at || null,
+          }
+        })
+      }
+
+      const mergedAdmins = mergeAuthData(adminProfiles || [])
+      const mergedProfessors = mergeAuthData(professorProfiles || [])
+      const mergedStudents = mergeAuthData(studentProfiles || [])
 
       return (
         <SuperAdminDashboardView
           user={user}
           stats={{
-            admins: adminProfiles?.length ?? 0,
-            professors: professorProfiles?.length ?? 0,
-            students: studentProfiles?.length ?? 0
+            admins: mergedAdmins.length,
+            professors: mergedProfessors.length,
+            students: mergedStudents.length
           }}
-          admins={adminProfiles ?? []}
-          professors={professorProfiles ?? []}
-          students={studentProfiles ?? []}
+          admins={mergedAdmins}
+          professors={mergedProfessors}
+          students={mergedStudents}
           initialApplications={applications ?? []}
           contactMessages={contactMessages ?? []}
         />

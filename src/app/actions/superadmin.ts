@@ -33,16 +33,21 @@ export async function inviteAdmin(formData: z.infer<typeof InviteAdminSchema>) {
 
   const adminClient = await createAdminClient()
 
-  // 1. Create auth user and send invitation email
-  const { data: invited, error: inviteErr } = await adminClient.auth.admin.inviteUserByEmail(email, {
-    data: { first_name, last_name, phone },
+  // 1. Generate an invite link manually to bypass Supabase internal SMTP limits
+  const { data: linkData, error: inviteErr } = await adminClient.auth.admin.generateLink({
+    type: 'invite',
+    email,
+    options: {
+      data: { first_name, last_name, phone },
+    },
   })
 
-  if (inviteErr || !invited?.user) {
+  if (inviteErr || !linkData?.properties?.action_link) {
     return { error: inviteErr?.message ?? 'Errore durante la creazione dell\'account.' }
   }
 
-  const userId = invited.user.id
+  const userId = linkData.user.id
+  const actionLink = linkData.properties.action_link
 
   // 2. Upsert the profile so the user lands on the correct role on first login
   const { error: profileErr } = await adminClient
@@ -60,6 +65,51 @@ export async function inviteAdmin(formData: z.infer<typeof InviteAdminSchema>) {
     // Best-effort cleanup of the orphan auth user
     await adminClient.auth.admin.deleteUser(userId)
     return { error: profileErr.message }
+  }
+
+  // 3. Send the invite email manually via Resend
+  let emailSent = false
+  let emailError = null
+
+  if (resend) {
+    const fromEmail = process.env.RESEND_FROM_EMAIL || 'Prenotazioni <onboarding@resend.dev>'
+    try {
+      const res = await resend.emails.send({
+        from: fromEmail,
+        to: email,
+        subject: 'Invito Amministratore Sito Prenotazioni',
+        html: `<p>Ciao ${first_name},</p>
+               <p>Sei stato invitato a gestire la piattaforma come Amministratore.</p>
+               <p><a href="${actionLink}" style="background-color: #4f46e5; color: white; padding: 10px 18px; text-decoration: none; border-radius: 6px; display: inline-block;">Accetta Invito</a></p>
+               <p><small>Il link è valido per 24 ore.</small></p>`,
+      })
+      if (res.error) {
+        emailError = `Resend Error: ${res.error.message}`
+      } else {
+        emailSent = true
+      }
+    } catch (e: any) {
+      emailError = e.message
+    }
+  } else {
+    emailError = 'Resend non configurato.'
+  }
+
+  revalidatePath('/dashboard')
+  
+  if (!emailSent) {
+    return { success: true, emailError: `Account creato, ma l'email non è stata inviata (${emailError}). Potresti dover confermare un dominio su Resend.` }
+  }
+
+  return { success: true }
+}
+
+export async function revokeAdminInvite(userId: string) {
+  const adminClient = await createAdminClient()
+
+  const { error } = await adminClient.auth.admin.deleteUser(userId)
+  if (error) {
+    return { error: error.message }
   }
 
   revalidatePath('/dashboard')
