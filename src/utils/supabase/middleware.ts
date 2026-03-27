@@ -33,6 +33,32 @@ export async function updateSession(request: NextRequest) {
   } = await supabase.auth.getUser()
 
   const url = request.nextUrl.clone()
+  const pathname = url.pathname
+
+  // Redirect per vecchi link UUID -> Slug (es: /[uuid]/prenota -> /professori/[slug]/prenota)
+  const uuidRegex = /^\/([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})(\/.*)?$/i
+  const match = uuidRegex.exec(pathname)
+  
+  if (match) {
+    const professorId = match[1]
+    const subPath = match[2] || ""
+    
+    // Cerchiamo lo slug dell'insegnante
+    const { data: prof } = await supabase
+      .from('professors')
+      .select('slug')
+      .eq('id', professorId)
+      .single()
+      
+    if (prof?.slug) {
+      url.pathname = `/professori/${prof.slug}${subPath}`
+      const response = NextResponse.redirect(url)
+      // Copia i cookie per non perdere la sessione
+      supabaseResponse.cookies.getAll().forEach((c) => response.cookies.set(c.name, c.value))
+      return response
+    }
+  }
+
 
   // Se cerchiamo di accedere ad admin e NON c'è un utente -> login
   if (url.pathname.startsWith('/admin') && !user) {
