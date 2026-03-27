@@ -37,24 +37,33 @@ export default async function DashboardPage() {
 
   switch (profile.role) {
     case 'superadmin': {
-      const [{ count: adminCount }, { count: professorCount }, { count: studentCount }, { data: applications }, { data: contactMessages }] = await Promise.all([
-        supabase.from('profiles').select('*', { count: 'exact', head: true }).eq('role', 'admin'),
-        supabase.from('profiles').select('*', { count: 'exact', head: true }).eq('role', 'professor'),
-        supabase.from('profiles').select('*', { count: 'exact', head: true }).eq('role', 'user'), // 'user' represents students
+      const [
+        { data: adminProfiles },
+        { data: professorProfiles },
+        { data: studentProfiles },
+        { data: applications },
+        { data: contactMessages }
+      ] = await Promise.all([
+        supabase.from('profiles').select('id, first_name, last_name, email, phone').eq('role', 'admin').order('first_name'),
+        supabase.from('profiles').select('id, first_name, last_name, email').eq('role', 'professor').order('first_name'),
+        supabase.from('profiles').select('id, first_name, last_name, email').in('role', ['user', 'student']).order('first_name'),
         supabase.from('professor_applications').select('*').order('created_at', { ascending: false }),
-        getContactMessages() // General messages (professor_id is null)
+        getContactMessages()
       ])
-      
+
       return (
-        <SuperAdminDashboardView 
-          user={user} 
+        <SuperAdminDashboardView
+          user={user}
           stats={{
-            admins: adminCount || 0,
-            professors: professorCount || 0,
-            students: studentCount || 0
+            admins: adminProfiles?.length ?? 0,
+            professors: professorProfiles?.length ?? 0,
+            students: studentProfiles?.length ?? 0
           }}
-          initialApplications={applications || []}
-          contactMessages={contactMessages || []}
+          admins={adminProfiles ?? []}
+          professors={professorProfiles ?? []}
+          students={studentProfiles ?? []}
+          initialApplications={applications ?? []}
+          contactMessages={contactMessages ?? []}
         />
       )
     }
